@@ -23,5 +23,5 @@ This tool is designed to be run manually from the command line.
 ## 📊 Output Format
 After running the tool, you can expect the following outputs:
 
-charts/: Folder with visual plots
+charts: Folder with visual plots
 
