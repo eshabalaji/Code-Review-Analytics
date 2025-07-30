@@ -6,7 +6,7 @@ import seaborn as sns
 from collections import defaultdict
 from datetime import datetime
 
-# ==== 🔐 Configuration ====
+# ==== 🔐 Configuration ==== 
 GITHUB_TOKEN = 'YOUR_API_KEY'
 OWNER = 'USER_NAME'
 REPO = 'REPO_NAME'
