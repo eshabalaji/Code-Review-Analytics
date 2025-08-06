@@ -1,5 +1,6 @@
 name: "Code Review Analytics"
 description: "Analyzes GitHub repository using extract.py and generates visual insights"
+author: "eshabalaji"
 
 inputs:
   github_token:
