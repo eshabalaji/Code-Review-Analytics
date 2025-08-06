@@ -1,2 +1,8 @@
 requests
 pandas
+base64
+matplotlib.pyplot as plt
+seaborn as sns
+defaultdict
+datetime
+os
