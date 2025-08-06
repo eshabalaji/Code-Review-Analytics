@@ -9,9 +9,9 @@ import os
 
 # ==== 🔐 Configuration ==== 
 
-GITHUB_TOKEN = 'GITHUB_TOKEN'
-OWNER = 'USER_NAME'
-REPO = 'REPO_NAME'
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
+OWNER = 'eshabalaji'
+REPO = 'code-review-analytics'
 HEADERS = {
     'Authorization': f'token {GITHUB_TOKEN}',
     'Accept': 'application/vnd.github.v3+json'
