@@ -1,0 +1,16 @@
+name: Run Code Review Analytics
+
+on:
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run the custom action
+        uses: ./
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
