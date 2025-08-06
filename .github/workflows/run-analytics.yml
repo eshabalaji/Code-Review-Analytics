@@ -1,16 +1,16 @@
 name: Run Code Review Analytics
 
 on:
-  workflow_dispatch:  # Allows manual triggering
+  workflow_dispatch:
 
 jobs:
   analyze:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run the custom action
-        uses: eshabalaji/code-review-analytics@main
+      - name: Run analytics action
+        uses: ./.github/actions/analyze
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
