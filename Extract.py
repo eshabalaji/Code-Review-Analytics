@@ -9,7 +9,7 @@ import os
 
 # ==== 🔐 Configuration ==== 
 
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
+GITHUB_TOKEN = 'GITHUB_TOKEN'
 OWNER = 'USER_NAME'
 REPO = 'REPO_NAME'
 HEADERS = {
