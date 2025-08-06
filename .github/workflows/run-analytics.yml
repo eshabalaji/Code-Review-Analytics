@@ -6,12 +6,19 @@ on:
 jobs:
   analyze:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run analytics action
-        uses: ./.github/actions/action
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          repo: eshabalaji/code-review-analytics
+          python-version: '3.x'
+
+      - name: Install requirements
+        run: |
+          pip install -r requirements.txt || echo "No requirements.txt file"
+
+      - name: Run Analytics Action
+        uses: ./.github/actions/action
