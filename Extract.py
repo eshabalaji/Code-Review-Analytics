@@ -5,9 +5,11 @@ import pandas as pd
 import seaborn as sns
 from collections import defaultdict
 from datetime import datetime
+import os
 
 # ==== 🔐 Configuration ==== 
-GITHUB_TOKEN = 'YOUR_API_KEY'
+
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
 OWNER = 'USER_NAME'
 REPO = 'REPO_NAME'
 HEADERS = {
