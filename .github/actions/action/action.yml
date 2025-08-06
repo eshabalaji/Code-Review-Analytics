@@ -1,9 +1,10 @@
 name: "Code Review Analytics"
-description: "A GitHub Action to analyze code review pull request data"
+description: "Analyzes GitHub Pull Request review metrics"
 inputs:
   GITHUB_TOKEN:
-    description: "GitHub Token to access repository"
+    description: "GitHub token to authenticate API requests"
     required: true
+
 runs:
   using: "composite"
   steps:
@@ -13,9 +14,9 @@ runs:
         python-version: '3.x'
 
     - name: Install dependencies
-      run: pip install -r .github/actions/action/requirements.txt
+      run: pip install -r requirements.txt
       shell: bash
 
-    - name: Run Analytics Script
+    - name: Run Python script
       run: python .github/actions/action/extract.py
       shell: bash
