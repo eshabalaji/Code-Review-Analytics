@@ -1,31 +1,21 @@
-name: "Code Review Analytics Action"
-
-description: "A composite action to run extract.py and analyze GitHub code reviews."
-
+name: "Code Review Analytics"
+description: "A GitHub Action to analyze code review pull request data"
 inputs:
-  github_token:
-    description: "GitHub token to authenticate API requests"
+  GITHUB_TOKEN:
+    description: "GitHub Token to access repository"
     required: true
-
 runs:
   using: "composite"
   steps:
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.11'
+        python-version: '3.x'
 
     - name: Install dependencies
-      run: |
-        if [ -f requirements.txt ]; then
-          pip install -r requirements.txt
-        else
-          echo "No requirements.txt file found"
-        fi
+      run: pip install -r .github/actions/action/requirements.txt
       shell: bash
 
-    - name: Run extract.py
-      run: python extract.py
+    - name: Run Analytics Script
+      run: python .github/actions/action/extract.py
       shell: bash
-      env:
-        GITHUB_TOKEN: ${{ inputs.github_token }}
