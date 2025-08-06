@@ -1,0 +1,9 @@
+name: "Run Code Review Analytics"
+description: "A GitHub action to run extract.py"
+runs:
+  using: "composite"
+  steps:
+    - name: Run Python Script
+      shell: bash
+      run: |
+        python extract.py
