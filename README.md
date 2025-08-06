@@ -6,7 +6,7 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
 
 ---
 ## File Structure
-
+```txt
 ├── README.md
 ├── requirements.txt                  ✅ Global requirements
 └── .github
@@ -16,7 +16,7 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
         └── action
             ├── action.yml           ✅ Composite Action
             └── extract.py           ✅ Python analytics code
-
+```
 ---
 
 ## 🔧 How It Works
