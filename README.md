@@ -6,7 +6,7 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
 
 ---
 ## File Structure
-.
+
 ├── README.md
 ├── requirements.txt                  ✅ Global requirements
 └── .github
@@ -48,7 +48,7 @@ requests
 matplotlib
 pandas
 seaborn
-
+```
 
 ---
 
