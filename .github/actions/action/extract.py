@@ -1,4 +1,57 @@
 import requests
+import os
+import pandas as pd
+import matplotlib.pyplot as plt
+
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or os.environ.get("INPUT_GITHUB_TOKEN")
+REPO_OWNER = os.getenv("GITHUB_REPOSITORY").split("/")[0]
+REPO_NAME = os.getenv("GITHUB_REPOSITORY").split("/")[1]
+
+HEADERS = {
+    "Authorization": f"Bearer {GITHUB_TOKEN}",
+    "Accept": "application/vnd.github.v3+json"
+}
+
+def fetch_pull_requests():
+    url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/pulls?state=all&per_page=100"
+    response = requests.get(url, headers=HEADERS)
+
+    if response.status_code != 200:
+        print(f"Failed to fetch PRs: {response.status_code}")
+        return []
+
+    return response.json()
+
+def analyze_pull_requests(prs):
+    data = []
+    for pr in prs:
+        data.append({
+            "Number": pr["number"],
+            "Title": pr["title"],
+            "User": pr["user"]["login"],
+            "State": pr["state"],
+            "Created": pr["created_at"],
+            "Closed": pr.get("closed_at", None),
+            "Merged": pr.get("merged_at", None),
+        })
+    
+    df = pd.DataFrame(data)
+    print("Pull Request Data:\n", df)
+
+    # Example: Plot state distribution
+    plt.figure(figsize=(6,4))
+    df['State'].value_counts().plot(kind='bar', title="Pull Request States")
+    plt.tight_layout()
+    plt.savefig("pr_states.png")
+    print("Saved pr_states.png")
+
+if __name__ == "__main__":
+    prs = fetch_pull_requests()
+    if prs:
+        analyze_pull_requests(prs)
+
+
+''' import requests
 import base64
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -153,4 +206,6 @@ def main():
 # Run the script
 if __name__ == "__main__":
     main()
+    ''' 
+
 
