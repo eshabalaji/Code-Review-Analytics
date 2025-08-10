@@ -1,15 +1,22 @@
 name: "Code Review Analytics"
 description: "Analyzes GitHub Pull Request review metrics"
+
 inputs:
   GITHUB_TOKEN:
     description: "GitHub token to authenticate API requests"
+    required: true
+  OWNER:
+    description: "Repository owner"
+    required: true
+  REPO:
+    description: "Repository name"
     required: true
 
 runs:
   using: "composite"
   steps:
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.x'
 
@@ -18,5 +25,9 @@ runs:
       shell: bash
 
     - name: Run Python script
-      run: python .github/actions/action/extract.py
+      run: |
+        export GITHUB_TOKEN=${{ inputs.GITHUB_TOKEN }}
+        export OWNER=${{ inputs.OWNER }}
+        export REPO=${{ inputs.REPO }}
+        python .github/actions/action/extract.py
       shell: bash
