@@ -9,9 +9,10 @@ import os
 
 # ==== 🔐 Configuration ==== 
 
-GITHUB_TOKEN = input("Enter your GitHub Personal Access Token: ").strip()
-OWNER = input("Enter the repository owner username: ").strip()
-REPO = input("Enter the repository name: ").strip()
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or input("Enter your GitHub Personal Access Token: ").strip()
+OWNER = os.getenv("OWNER") or input("Enter the repository owner username: ").strip()
+REPO = os.getenv("REPO") or input("Enter the repository name: ").strip()
+
 
 os.environ['GITHUB_TOKEN'] = GITHUB_TOKEN
 HEADERS = {
