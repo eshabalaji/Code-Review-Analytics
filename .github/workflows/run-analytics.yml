@@ -15,3 +15,5 @@ jobs:
         uses: ./.github/actions/action
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: eshabalaji
+          REPO: code-review-analytics
