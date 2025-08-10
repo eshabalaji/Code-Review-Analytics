@@ -4,6 +4,12 @@ inputs:
   GITHUB_TOKEN:
     description: "GitHub token to authenticate API requests"
     required: true
+  OWNER:
+    description: "Repository owner (optional)"
+    required: false
+  REPO:
+    description: "Repository name (optional)"
+    required: false
 
 runs:
   using: "composite"
@@ -16,7 +22,15 @@ runs:
     - name: Install dependencies
       run: pip install -r requirements.txt
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        OWNER: ${{ inputs.OWNER }}
+        REPO: ${{ inputs.REPO }}
 
     - name: Run Python script
       run: python .github/actions/action/extract.py
       shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        OWNER: ${{ inputs.OWNER }}
+        REPO: ${{ inputs.REPO }}
