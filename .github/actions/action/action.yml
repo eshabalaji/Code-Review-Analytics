@@ -20,22 +20,3 @@ runs:
     - name: Run Python script
       run: python .github/actions/action/extract.py
       shell: bash
-
-.github/workflows/run-analytics.yml
-name: Run Code Review Analytics
-
-on:
-  workflow_dispatch:
-
-jobs:
-  analyze:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Analytics Action
-        uses: ./.github/actions/action
-        with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
