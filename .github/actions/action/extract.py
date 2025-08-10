@@ -1,51 +1,23 @@
-import os
-import sys
 import requests
 import base64
-import matplotlib
-matplotlib.use('Agg')  # avoid display issues on headless runners
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 from collections import defaultdict
 from datetime import datetime
+import os
 
-# Prefer environment variables (non-interactive). Fallback to input() only for local dev.
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN') or os.environ.get('INPUT_GITHUB_TOKEN')
-GITHUB_REPOSITORY = os.environ.get('GITHUB_REPOSITORY', '')  # e.g. "owner/repo"
-OWNER = os.environ.get('OWNER')
-REPO = os.environ.get('REPO')
+# ==== 🔐 Configuration ==== 
 
-# If OWNER/REPO not supplied, try to parse GITHUB_REPOSITORY
-if not OWNER or not REPO:
-    if '/' in GITHUB_REPOSITORY:
-        owner_from_env, repo_from_env = GITHUB_REPOSITORY.split('/', 1)
-        OWNER = OWNER or owner_from_env
-        REPO = REPO or repo_from_env
+GITHUB_TOKEN = input("Enter your GitHub Personal Access Token: ").strip()
+OWNER = input("Enter the repository owner username: ").strip()
+REPO = input("Enter the repository name: ").strip()
 
-# If running locally and still missing values, ask interactively.
-if not GITHUB_TOKEN:
-    GITHUB_TOKEN = input("Enter your GitHub Personal Access Token: ").strip()
-if not OWNER:
-    OWNER = input("Enter the repository owner username: ").strip()
-if not REPO:
-    REPO = input("Enter the repository name: ").strip()
-
+os.environ['GITHUB_TOKEN'] = GITHUB_TOKEN
 HEADERS = {
     'Authorization': f'token {GITHUB_TOKEN}',
     'Accept': 'application/vnd.github.v3+json'
 }
-
-# Helpful debug: show helpful message on auth failures (but never print token)
-def _print_error_response(res):
-    try:
-        body = res.json()
-    except Exception:
-        body = res.text
-    print(f"HTTP {res.status_code} response: {body}")
-
-# Example usage in code: when you check a response, call _print_error_response(res)
-# (rest of your script unchanged, but update error branches to call _print_error_response)
-
 BASE_URL = f'https://api.github.com/repos/{OWNER}/{REPO}'
 
 # ==== 🔁 Utilities ====
@@ -141,8 +113,7 @@ def plot_commit_activity(date_count):
     plt.xticks(rotation=45)
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig('commit_activity.png')  # Save instead of showing
-    plt.close()
+    plt.show()
 
 def plot_author_activity(author_count):
     df = pd.DataFrame(author_count.items(), columns=['Author', 'CommitCount']).sort_values(by='CommitCount', ascending=False)
@@ -151,9 +122,7 @@ def plot_author_activity(author_count):
     plt.title('Commits per Contributor')
     plt.xticks(rotation=45)
     plt.tight_layout()
-    plt.savefig('author_activity.png')  # Save instead of showing
-    plt.close()
-
+    plt.show()
 
 # ==== 🔁 Main ====
 def main():
