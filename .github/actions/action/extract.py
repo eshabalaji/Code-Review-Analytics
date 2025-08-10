@@ -9,9 +9,11 @@ import os
 
 # ==== 🔐 Configuration ==== 
 
-GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN')
-OWNER = 'eshabalaji'
-REPO = 'code-review-analytics'
+GITHUB_TOKEN = input("Enter your GitHub Personal Access Token: ").strip()
+OWNER = input("Enter the repository owner username: ").strip()
+REPO = input("Enter the repository name: ").strip()
+
+os.environ['GITHUB_TOKEN'] = GITHUB_TOKEN
 HEADERS = {
     'Authorization': f'token {GITHUB_TOKEN}',
     'Accept': 'application/vnd.github.v3+json'
