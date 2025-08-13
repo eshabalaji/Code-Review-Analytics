@@ -1,18 +1,16 @@
+import os
 import requests
 import base64
-import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib.pyplot as plt
 import seaborn as sns
-from collections import defaultdict
 from datetime import datetime
-import os
+from collections import defaultdict
 
-# ==== 🔐 Configuration ==== 
-
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or input("Enter your GitHub Personal Access Token: ").strip()
-OWNER = os.getenv("OWNER") or input("Enter the repository owner username: ").strip()
-REPO = os.getenv("REPO") or input("Enter the repository name: ").strip()
-
+# ==== CONFIG ====
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or input("Enter your GitHub Token: ").strip()
+OWNER = os.getenv("OWNER") or input("Enter repo owner: ").strip()
+REPO = os.getenv("REPO") or input("Enter repo name: ").strip()
 
 os.environ['GITHUB_TOKEN'] = GITHUB_TOKEN
 HEADERS = {
@@ -36,29 +34,22 @@ def get_paginated_data(url):
 def fetch_repo_data():
     res = requests.get(BASE_URL, headers=HEADERS)
     if res.status_code == 200:
-        data = res.json()
-        print("Repository Name:", data['name'])
-        print("Description:", data['description'])
-        print("Stars:", data['stargazers_count'])
-        print("Forks:", data['forks_count'])
-        print("Open Issues:", data['open_issues_count'])
-        print("Created at:", data['created_at'])
-        print("Last updated:", data['updated_at'])
-        return data
+        return res.json()
     else:
         print("Failed to fetch repo data:", res.status_code)
         return None
 
 # ==== 📖 README ====
-def fetch_readme():
+'''def fetch_readme():
     url = f'{BASE_URL}/readme'
     res = requests.get(url, headers=HEADERS)
     if res.status_code == 200:
         content = base64.b64decode(res.json()['content']).decode('utf-8')
-        print("\nREADME Content:\n")
-        print(content)
+        print("\nREADME Content:\n", content)
     else:
         print("Failed to fetch README:", res.status_code)
+
+'''
 
 # ==== 🚀 Commits ====
 def fetch_commits():
@@ -82,28 +73,45 @@ def fetch_contributors():
 def fetch_pull_requests():
     return get_paginated_data(f'{BASE_URL}/pulls?state=all')
 
-def print_pull_requests(prs):
-    if not prs:
-        print("0 pull requests")
-    else:
-        for pr in prs:
-            print(f"PR #{pr['number']} by {pr['user']['login']}: {pr['title']} (State: {pr['state']})")
+# Detailed PR Data
+def fetch_pull_requests_with_details():
+    prs = get_paginated_data(f'{BASE_URL}/pulls?state=all')
+    pr_data = []
+    for pr in prs:
+        pr_number = pr['number']
+        pr_details_url = f'{BASE_URL}/pulls/{pr_number}'
+        pr_details = requests.get(pr_details_url, headers=HEADERS).json()
 
-# ==== 📁 File Tree Download ====
-def download_all_files(repo_data):
-    branch = repo_data['default_branch']
-    tree_url = f'{BASE_URL}/git/trees/{branch}?recursive=1'
-    res = requests.get(tree_url, headers=HEADERS)
-    tree = res.json().get('tree', [])
-    blobs = [f for f in tree if f['type'] == 'blob']
-    print(f"Total files found: {len(blobs)}")
+        reviews_url = f'{BASE_URL}/pulls/{pr_number}/reviews'
+        reviews = get_paginated_data(reviews_url)
+        reviewers = list(set(r['user']['login'] for r in reviews if r.get('user')))
 
-    for file in blobs:
-        raw_url = f'https://raw.githubusercontent.com/{OWNER}/{REPO}/{branch}/{file["path"]}'
-        content = requests.get(raw_url).text
-        print(f"Downloading: {file['path']}")
-        with open(file['path'], 'w', encoding='utf-8') as f:
-            f.write(content)
+        comments_url = f'{BASE_URL}/issues/{pr_number}/comments'
+        comments = get_paginated_data(comments_url)
+        commenters = list(set(c['user']['login'] for c in comments if c.get('user')))
+
+        pr_data.append({
+            'number': pr_number,
+            'title': pr['title'],
+            'author': pr['user']['login'],
+            'state': pr['state'],
+            'created_at': pr['created_at'],
+            'merged_at': pr.get('merged_at'),
+            'reviewers': reviewers,
+            'commenters': commenters
+        })
+    return pr_data
+
+# ==== 🐞 Issues ====
+def fetch_issues():
+    return get_paginated_data(f'{BASE_URL}/issues?state=all')
+
+def issues_fixed_by(issues):
+    fixed_map = defaultdict(int)
+    for issue in issues:
+        if issue.get('state') == 'closed' and issue.get('closed_by'):
+            fixed_map[issue['closed_by']['login']] += 1
+    return fixed_map
 
 # ==== 📊 Visualizations ====
 def plot_commit_activity(date_count):
@@ -125,34 +133,85 @@ def plot_author_activity(author_count):
     plt.tight_layout()
     plt.show()
 
-# ==== 🔁 Main ====
+def plot_pr_timeline(pr_data):
+    df = pd.DataFrame(pr_data)
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    df_open = df[df['state'] == 'open']
+    df_closed = df[df['state'] == 'closed']
+
+    plt.figure(figsize=(7, 5))
+    plt.hist(df_open['created_at'], bins=10, alpha=0.7, label='Open PRs')
+    plt.hist(df_closed['created_at'], bins=10, alpha=0.7, label='Closed PRs')
+    plt.legend()
+    plt.title('PRs Created Over Time')
+    plt.xlabel('Date')
+    plt.ylabel('Number of PRs')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+def plot_open_vs_closed_issues_counts(issues):
+    open_count = sum(1 for i in issues if i['state'] == 'open')
+    closed_count = sum(1 for i in issues if i['state'] == 'closed')
+
+    plt.figure(figsize=(6, 5))
+    plt.bar(['Open', 'Closed'], [open_count, closed_count], color=['skyblue', 'lightgreen'])
+    plt.title('Open vs Closed Issues (Count)')
+    plt.ylabel('Number of Issues')
+
+    # Annotate counts above bars
+    for idx, count in enumerate([open_count, closed_count]):
+        plt.text(idx, count + 0.5, str(count), ha='center', fontsize=12)
+
+    plt.show()
+
+
+def plot_issues_fixed_by(fixed_map):
+    df = pd.DataFrame(fixed_map.items(), columns=['User', 'Issues Fixed']).sort_values(by='Issues Fixed', ascending=False)
+    plt.figure(figsize=(6, 5))
+    sns.barplot(data=df, x='User', y='Issues Fixed')
+    plt.title('Issues Fixed by Contributor')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
+
+# ==== Main ====
 def main():
     repo_data = fetch_repo_data()
     if not repo_data:
         return
+    
+    print(f"Repository: {repo_data['name']}")
+    print(f"Description: {repo_data['description']}")
+    print(f"Stars: {repo_data['stargazers_count']}, Forks: {repo_data['forks_count']}")
+    print(f"Open Issues: {repo_data['open_issues_count']}")
+    created = datetime.strptime(repo_data['created_at'], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
+    updated = datetime.strptime(repo_data['updated_at'], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
+    print(f"Created: {created}, Updated: {updated}")
 
-    fetch_readme()
 
-    # Commits
+    #fetch_readme()
+
     commits = fetch_commits()
-    print(f"Total commits: {len(commits)}")
     date_count, author_count = group_commits_by_date_and_author(commits)
 
-    # Pull Requests
-    prs = fetch_pull_requests()
-    print_pull_requests(prs)
-
-    # Contributors (optional usage)
     contributors = fetch_contributors()
-    print(f"\nTotal Contributors: {len(contributors)}")
+    print(f"Total Contributors: {len(contributors)}")
 
-    # Files (optional - uncomment to download files)
-    # download_all_files(repo_data)
+    pr_data = fetch_pull_requests_with_details()
+    issues = fetch_issues()
+    fixed_map = issues_fixed_by(issues)
 
-    # Visualizations
+    # Table View of PRs
+    pr_df = pd.DataFrame(pr_data)
+    print("\nPull Request Data:\n", pr_df)
+
+    # Plots
     plot_commit_activity(date_count)
     plot_author_activity(author_count)
+    plot_pr_timeline(pr_data)
+    plot_open_vs_closed_issues_counts(issues)
+    plot_issues_fixed_by(fixed_map)
 
-# Run the script
 if __name__ == "__main__":
     main()
