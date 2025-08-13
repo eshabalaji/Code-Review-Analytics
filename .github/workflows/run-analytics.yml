@@ -14,10 +14,6 @@ jobs:
       - name: Run Analytics Action
         uses: ./.github/actions/action
         with:
-<<<<<<< HEAD
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-=======
-          GITHUB_TOKEN: ""
->>>>>>> 352b498 (Revert "Fix: pass GITHUB_TOKEN to avoid 401 error (Fixes #<issue-2>)")
           OWNER: eshabalaji
           REPO: code-review-analytics
