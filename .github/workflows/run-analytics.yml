@@ -14,6 +14,6 @@ jobs:
       - name: Run Analytics Action
         uses: ./.github/actions/action
         with:
-          GITHUB_TOKEN: ""
+          GITHUB_TOKEN: ${{secret.GITHUB_TOKEN}}
           OWNER: eshabalaji
           REPO: code-review-analytics
