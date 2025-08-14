@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v4
         
       - name: Run Analytics Action
-        
+        uses: ./.github/actions/action
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OWNER: eshabalaji
