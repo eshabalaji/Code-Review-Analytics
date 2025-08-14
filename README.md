@@ -21,21 +21,49 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
 
 ## 🔧 How It Works
 
-- The `run-analytics.yml` workflow is triggered manually (`workflow_dispatch`).
-- It sets up Python, installs dependencies from `requirements.txt`, and then runs the custom action.
-- The action defined in `.github/actions/action/action.yml` runs `extract.py` to generate analytics.
+- The `run-analytics.yml` workflow is triggered manually (workflow_dispatch) or after code is pushed (if configured).
+
+- It sets up Python, installs dependencies from requirements.txt, and then runs the custom action.
+
+- The action defined in `.github/actions/action/action.yml` runs `extract.py` to:
+
+  - Fetch repository metadata (creation & last update date)
+
+  - Fetch Pull Request details (contributors, PRs per day, PR status)
+
+  - Fetch Issue details (open vs closed counts, issue assignees, resolution activity)
+
+  - Generate visualizations for insights.
 
 ---
 
 ## 📝 Usage
 
-### Step 1: Trigger the Workflow
+### Step 1: Set Up Environment Variables
+
+You must set the following as GitHub Secrets for authentication:
+
+`GH_TOKEN` → Your GitHub Personal Access Token
+
+`GH_USERNAME` → Your GitHub username
+
+### Step 2: Trigger the Workflow
 
 Navigate to the **Actions** tab in your GitHub repo, and manually trigger the `Run Code Review Analytics` workflow.
 
-### Step 2: View Results
+You can also run it locally:
+```
+export GH_TOKEN="your_token"
+export GH_USERNAME="your_username"
+python extract.py
+```
 
-Once the workflow completes, check the workflow logs or download generated files (if any) from the "Artifacts" section.
+### Step 3: View Results
+
+- Once the workflow completes, check:
+  - The workflow logs for tabular statistics
+  - The generated plots directly in your terminal or saved files
+  - GitHub Actions artifacts for downloaded results
 
 ---
 
@@ -58,7 +86,8 @@ Depending on your `extract.py` implementation, the analytics output may include:
 
 - 📌 **Pull Request Statistics**
   - Total PRs (open, closed, merged)
-  - PRs per contributor
+  - PRs per day
+  - Contributors to each PR
   - Time to merge
 
 - 👥 **Contributor Activity**
@@ -66,12 +95,20 @@ Depending on your `extract.py` implementation, the analytics output may include:
   - Frequency of contributions
   - Average review time per user
 
+- 🐛 **Issue Metrics**
+  - Open vs closed issues (counts & charts)
+  - Assignees who fixed issues
+  - Issue closure trends over time
+
 - ⏱️ **Review Metrics**
   - Review response times
   - Number of review comments per PR
   - PRs with no reviews
 
 - 📈 **Visualizations**
-  - Bar charts, pie charts, and line graphs
-  - Contributor heatmaps
-  - Weekly/monthly activity trends
+  - Bar chart → Contributions per contributor
+  - Line chart → Contributions per day
+  - Line chart → PRs per day
+  - Bar chart → Open vs closed issues (count-based)
+  - Contributor table → Who fixed which issues
+  - Additional repository metadata (created date, last updated date)
