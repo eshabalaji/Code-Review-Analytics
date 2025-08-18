@@ -28,19 +28,7 @@ def _log_http_error(resp, where=""):
         err = {"message": resp.text}
     print(f"HTTP {resp.status_code} while {where} -> {err}", file=sys.stderr)
 
-def github_get(url, params=None, where="GET"):
-    params = params or {}
-    if "per_page" not in params:
-        params["per_page"] = 100
-    resp = requests.get(url, headers=HEADERS, params=params)
-    if resp.status_code != 200:
-        _log_http_error(resp, where=f"{where} {url}")
-        return None
-    try:
-        return resp.json()
-    except Exception:
-        print(f"Failed to parse JSON at {url}", file=sys.stderr)
-        return None
+
 
 def get_paginated_data(url, params=None, where="GET (paginated)"):
     """Restore/ensure full pagination so we never stop at page 1."""
