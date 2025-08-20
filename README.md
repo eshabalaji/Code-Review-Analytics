@@ -14,8 +14,11 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
     │   └── run-analytics.yml         ✅ Workflow file
     └── actions
         └── action
-            ├── action.yml           ✅ Composite Action
-            └── extract.py           ✅ Python analytics code
+            ├── action.yml           # Composite Action
+            ├── main.py              # Main execution script
+            ├── github_api.py        # Data fetching functions
+            └──visualizations.py     # Plotting functions
+             
 ```
 ---
 
@@ -25,7 +28,7 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
 
 - It sets up Python, installs dependencies from requirements.txt, and then runs the custom action.
 
-- The action defined in `.github/actions/action/action.yml` runs `extract.py` to:
+- The action defined in `.github/actions/action/action.yml` runs `main.py` to:
 
   - Fetch repository metadata (creation & last update date)
 
@@ -55,7 +58,7 @@ You can also run it locally:
 ```
 export GH_TOKEN="your_token"
 export GH_USERNAME="your_username"
-python extract.py
+python main.py
 ```
 
 ### Step 3: View Results
@@ -82,7 +85,7 @@ seaborn
 
 ## 📊 Output Format
 
-Depending on your `extract.py` implementation, the analytics output may include:
+Depending on your `visualisation.py` implementation, the analytics output may include:
 
 - 📌 **Pull Request Statistics**
   - Total PRs (open, closed, merged)
@@ -112,3 +115,31 @@ Depending on your `extract.py` implementation, the analytics output may include:
   - Bar chart → Open vs closed issues (count-based)
   - Contributor table → Who fixed which issues
   - Additional repository metadata (created date, last updated date)
+    
+- ✅ **CSV Files**
+  `contributors.csv`
+   - List of all contributors to the repository.
+   - Includes contributor login, number of contributions, and other metadata.
+   - 
+  `prs.csv`
+   - Details of all Pull Requests.
+   - Contains PR number, title, author, creation/merge dates, state, and commit SHAs.
+   - 
+  `issues.csv`
+  - Repository issues with metadata.
+  - Includes issue ID, title, state, created/closed dates, and closer (if resolved).
+
+  `review_events.csv`
+   - Pull request review events.
+   - Contains reviewer, review state (approved, changes requested, etc.), and timestamps.
+
+  `review_comments.csv`
+   - Code review comments on PRs.
+   - Includes reviewer, file path, line number, and comment text.
+
+  `issue_comments.csv`
+   - Comments made on issues.
+   - Contains commenter, comment text, and timestamps.
+
+  `all_comments.csv`
+   - Consolidated file with all comments (reviews + issue comments).
