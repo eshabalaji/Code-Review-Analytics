@@ -29,5 +29,5 @@ runs:
         export GITHUB_TOKEN=${{ inputs.GITHUB_TOKEN }}
         export OWNER=${{ inputs.OWNER }}
         export REPO=${{ inputs.REPO }}
-        python .github/actions/action/extract.py
+        python .github/actions/action/main.py
       shell: bash
