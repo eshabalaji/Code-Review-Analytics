@@ -39,10 +39,6 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
     * Create PR analytics (timeline, merge time distribution, review patterns)
     * Build collaboration heatmaps (who reviews whom)
     * Plot issue resolution metrics and contributor activity
-  * **Data Export**:
-    * Save 7 detailed CSV files for further analysis
-    * Export comprehensive review and comment datasets
-    * Generate combined reports for easy data consumption
 ---
 
 ## 📝 Usage
