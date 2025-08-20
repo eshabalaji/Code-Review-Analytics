@@ -14,10 +14,10 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
     │   └── run-analytics.yml         ✅ Workflow file
     └── actions
         └── action
-            ├── action.yml           # Composite Action
-            ├── main.py              # Main execution script
-            ├── github_api.py        # Data fetching functions
-            └──visualizations.py     # Plotting functions
+            ├── action.yml           ✅ Composite Action
+            ├── main.py              ✅ Main execution script
+            ├── github_api.py        ✅ Data fetching functions
+            └──visualizations.py     ✅ Plotting functions
              
 ```
 ---
