@@ -122,7 +122,7 @@ Depending on your `visualisation.py` implementation, the analytics output may in
    - List of all contributors to the repository.
    - Includes contributor login, number of contributions, and other metadata.
    - 
-  `prs.csv`
+  `Pull_requests.csv`
    - Details of all Pull Requests.
    - Contains PR number, title, author, creation/merge dates, state, and commit SHAs.
    - 
