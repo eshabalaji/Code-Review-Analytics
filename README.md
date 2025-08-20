@@ -27,17 +27,22 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
 - The `run-analytics.yml` workflow is triggered manually (workflow_dispatch) or after code is pushed (if configured).
 
 - It sets up Python, installs dependencies from requirements.txt, and then runs the custom action.
-
 - The action defined in `.github/actions/action/action.yml` runs `main.py` to:
-
-  - Fetch repository metadata (creation & last update date)
-
-  - Fetch Pull Request details (contributors, PRs per day, PR status)
-
-  - Fetch Issue details (open vs closed counts, issue assignees, resolution activity)
-
-  - Generate visualizations for insights.
-
+  * **Data Collection** (`github_api.py`):
+    * Fetch repository metadata (creation & last update date, stars, forks)
+    * Fetch commit history and group by date/author
+    * Fetch contributor statistics and participation levels
+    * Fetch detailed Pull Request data (reviews, comments, merge times, interactions)
+    * Fetch Issue details (open vs closed counts, resolution activity, closers)
+  * **Analysis & Visualization** (`visualizations.py`):
+    * Generate commit activity charts (daily trends, author contributions)
+    * Create PR analytics (timeline, merge time distribution, review patterns)
+    * Build collaboration heatmaps (who reviews whom)
+    * Plot issue resolution metrics and contributor activity
+  * **Data Export**:
+    * Save 7 detailed CSV files for further analysis
+    * Export comprehensive review and comment datasets
+    * Generate combined reports for easy data consumption
 ---
 
 ## 📝 Usage
