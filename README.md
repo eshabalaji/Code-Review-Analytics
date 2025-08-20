@@ -117,6 +117,7 @@ Depending on your `visualisation.py` implementation, the analytics output may in
   - Additional repository metadata (created date, last updated date)
     
 - ✅ **CSV Files**
+  
   `contributors.csv`
    - List of all contributors to the repository.
    - Includes contributor login, number of contributions, and other metadata.
