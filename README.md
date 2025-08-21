@@ -39,6 +39,10 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
     * Create PR analytics (timeline, merge time distribution, review patterns)
     * Build collaboration heatmaps (who reviews whom)
     * Plot issue resolution metrics and contributor activity
+  * **Data Export**:
+    * Save 7 detailed CSV files for further analysis
+    * Export comprehensive review and comment datasets
+    * Generate combined reports for easy data consumption
 ---
 
 ## 📝 Usage
@@ -47,9 +51,9 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
 
 You must set the following as GitHub Secrets for authentication:
 
-`GH_TOKEN` → Your GitHub Personal Access Token
-
-`GH_USERNAME` → Your GitHub username
+`GITHUB_TOKEN` → Your GitHub Personal Access Token
+`OWNER` → Repository owner
+`REPO` → Repository name
 
 ### Step 2: Trigger the Workflow
 
@@ -57,8 +61,9 @@ Navigate to the **Actions** tab in your GitHub repo, and manually trigger the `R
 
 You can also run it locally:
 ```
-export GH_TOKEN="your_token"
-export GH_USERNAME="your_username"
+export GITHUB_TOKEN="your_token"
+export OWNER="repository_owner"
+export REPO="repository_name"
 python main.py
 ```
 
@@ -123,7 +128,7 @@ Depending on your `visualisation.py` implementation, the analytics output may in
    - List of all contributors to the repository.
    - Includes contributor login, number of contributions, and other metadata.
    - 
-  `Pull_requests.csv`
+  `pull_requests.csv`
    - Details of all Pull Requests.
    - Contains PR number, title, author, creation/merge dates, state, and commit SHAs.
    - 
