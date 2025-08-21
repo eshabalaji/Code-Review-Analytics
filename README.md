@@ -52,7 +52,9 @@ Code-Review-Analytics is a tool designed to analyze code reviews. It tracks key 
 You must set the following as GitHub Secrets for authentication:
 
 `GITHUB_TOKEN` → Your GitHub Personal Access Token
+
 `OWNER` → Repository owner
+
 `REPO` → Repository name
 
 ### Step 2: Trigger the Workflow
