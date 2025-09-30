@@ -1,5 +1,12 @@
 import pandas as pd
 from datetime import datetime
+import os  # Added import for file system operations
+import sys # Added import for system path management
+
+# Add the directory containing your scripts to the Python path
+# This is crucial when the script is run from a different CWD (e.g., from app.py)
+sys.path.append(os.path.join(os.path.dirname(__file__)))
+
 from github_api import (
     fetch_repo_data, fetch_commits, group_commits_by_date_and_author,
     fetch_contributors, fetch_pull_requests_with_details, fetch_issues,
@@ -9,16 +16,17 @@ from github_api import (
 )
 from visualisation import (
     plot_commit_activity, plot_author_activity, plot_pr_timeline,
-    plot_prs_per_day, plot_open_vs_closed_issues_counts, plot_issues_fixed_by,
-    plot_reviewer_author_heatmap, plot_time_to_merge
+    plot_prs_per_day, plot_open_vs_closed_issues_counts, plot_issues_fixed_by
 )
 
-# ===== Main =====
+# ===== Main Execution Script =====
 def main():
     repo_data = fetch_repo_data()
     if not repo_data:
+        print("Failed to fetch repository data. Exiting.")
         return
 
+    # Printing to stdout is still useful for debugging the backend
     print(f"Repository: {repo_data['name']}")
     print(f"Description: {repo_data['description']}")
     print(f"Stars: {repo_data['stargazers_count']}, Forks: {repo_data['forks_count']}")
@@ -69,16 +77,22 @@ def main():
     else:
         print("\nNo fixed issue data (or unable to resolve closers).")
 
+    # === Prepare output directory for plots ===
+    # This directory will be served by the Flask app
+    output_dir = os.path.join(os.path.dirname(__file__), 'plots')
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"\nCreated plot directory: {output_dir}")
+
     # === Plots ===
-    plot_commit_activity(date_count)
-    plot_author_activity(author_count)
+    # All plot functions now save an image file to the `output_dir`
+    plot_commit_activity(date_count, output_dir)
+    plot_author_activity(author_count, output_dir)
     if not pr_df.empty:
-        plot_pr_timeline(pr_df)
-        plot_prs_per_day(pr_df)
-        plot_reviewer_author_heatmap(interactions)
-        plot_time_to_merge(pr_df)
-    plot_open_vs_closed_issues_counts(issues)
-    plot_issues_fixed_by(fixed_map)
+        plot_pr_timeline(pr_df, output_dir)
+        plot_prs_per_day(pr_df, output_dir)
+    plot_open_vs_closed_issues_counts(issues, output_dir)
+    plot_issues_fixed_by(fixed_map, output_dir)
+    print("All plots generated successfully.")
 
     # === Save CSVs (incl. commenters artifacts) ===
     save_contributors_csv(contributors)

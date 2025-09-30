@@ -233,40 +233,53 @@ def top_reviewers_table(pr_df):
     return df
 
 # ===== Save helpers =====
+import pandas as pd
+from pathlib import Path
+
+# Define the single target directory for saving the CSV files
+CSV_DIR = Path("csv")
+
+def save_dataframe_to_csv(data, filename):
+    """A helper function to ensure the directory exists, create the DataFrame, and save the CSV."""
+    # Ensure the 'csv' directory exists, creating it if necessary
+    CSV_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Create the full path for the CSV file (e.g., 'csv/contributors.csv')
+    file_path = CSV_DIR / filename
+    
+    # Create the DataFrame and save it
+    df = pd.DataFrame(data)
+    df.to_csv(file_path, index=False)
+    print(f"Saved {file_path}")
+
 def save_contributors_csv(contributors):
-    df = pd.DataFrame(contributors)
-    df.to_csv("contributors.csv", index=False)
-    print("✅ Saved contributors.csv")
+    save_dataframe_to_csv(contributors, "contributors.csv")
 
 def save_prs_csv(prs):
-    df = pd.DataFrame(prs)
-    df.to_csv("pull_requests.csv", index=False)
-    print("✅ Saved pull_requests.csv")
+    save_dataframe_to_csv(prs, "pull_requests.csv")
 
 def save_issues_csv(issues):
-    df = pd.DataFrame(issues)
-    df.to_csv("issues.csv", index=False)
-    print("✅ Saved issues.csv")
+    save_dataframe_to_csv(issues, "issues.csv")
 
 def save_review_events_csv(review_events):
-    df = pd.DataFrame(review_events)
-    df.to_csv("review_events.csv", index=False)
-    print("✅ Saved review_events.csv")
+    save_dataframe_to_csv(review_events, "review_events.csv")
 
 def save_review_comments_csv(review_comments):
-    df = pd.DataFrame(review_comments)
-    df.to_csv("review_comments.csv", index=False)
-    print("✅ Saved review_comments.csv")
+    save_dataframe_to_csv(review_comments, "review_comments.csv")
 
 def save_issue_comments_csv(issue_comments):
-    df = pd.DataFrame(issue_comments)
-    df.to_csv("issue_comments.csv", index=False)
-    print("✅ Saved issue_comments.csv")
+    save_dataframe_to_csv(issue_comments, "issue_comments.csv")
 
 def save_all_comments_csv(review_comments, issue_comments):
     """Combine both comment types into a single CSV for quick checks."""
+    # Ensure the directory exists
+    CSV_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # Define the full path for the combined file
+    file_path = CSV_DIR / "all_comments.csv"
+    
     df1 = pd.DataFrame(review_comments)
     df2 = pd.DataFrame(issue_comments)
     df = pd.concat([df1, df2], ignore_index=True)
-    df.to_csv("all_comments.csv", index=False)
-    print("✅ Saved all_comments.csv")
+    df.to_csv(file_path, index=False)
+    print(f"Saved {file_path}")

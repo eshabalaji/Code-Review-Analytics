@@ -1,114 +1,142 @@
-import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
+import os
+from datetime import datetime
 
+def setup_plot_style():
+    """Sets up a clean, professional plot style."""
+    sns.set_style("whitegrid")
+    sns.set_palette("Paired")
+    plt.rcParams["figure.figsize"] = (10, 6)
+    plt.rcParams["font.size"] = 12
+    plt.rcParams["axes.labelsize"] = 14
+    plt.rcParams["axes.titlesize"] = 16
+    plt.rcParams["xtick.labelsize"] = 10
+    plt.rcParams["ytick.labelsize"] = 10
+    plt.rcParams["figure.titleweight"] = "bold"
 
-# ===== Visualizations =====
-def plot_commit_activity(date_count):
+def save_plot(filename, output_dir):
+    """Saves the current plot to a file and closes it."""
+    try:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        filepath = os.path.join(output_dir, filename)
+        plt.tight_layout()
+        plt.savefig(filepath)
+        print(f"+ Saved plot to {filepath}")
+    except Exception as e:
+        print(f"❌ Failed to save plot {filename}: {e}")
+    finally:
+        plt.close()
+
+def plot_commit_activity(date_count, output_dir):
+    """Plots commit activity over time."""
     if not date_count:
-        print("No commits to plot.")
+        print("No commit data to plot.")
         return
-    df = pd.DataFrame(sorted(date_count.items()), columns=['Date', 'Commits'])
-    plt.figure(figsize=(7,4))
-    sns.lineplot(data=df, x='Date', y='Commits', marker='o')
-    plt.title('Commits per Day')
-    plt.xticks(rotation=45)
+    setup_plot_style()
+    df = pd.DataFrame(date_count.items(), columns=['Date', 'Commits'])
+    df['Date'] = pd.to_datetime(df['Date'])
+    df = df.sort_values('Date')
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(df['Date'], df['Commits'], marker='o', linestyle='-')
+    plt.title('Commit Activity Over Time')
+    plt.xlabel('Date')
+    plt.ylabel('Number of Commits')
     plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-def plot_author_activity(author_count):
-    if not author_count:
-        print("No author commit data to plot.")
-        return
-    df = pd.DataFrame(author_count.items(), columns=['Author', 'CommitCount']).sort_values(by='CommitCount', ascending=False)
-    plt.figure(figsize=(7,4))
-    sns.barplot(data=df, x='Author', y='CommitCount')
-    plt.title('Commits per Contributor')
     plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+    save_plot('commit_activity.png', output_dir)
 
-def plot_pr_timeline(pr_df):
-    if pr_df.empty:
-        print("No PRs to plot timeline.")
+def plot_author_activity(author_count, output_dir):
+    """Plots top authors by commit count."""
+    if not author_count:
+        print("No author data to plot.")
         return
-    df = pr_df.copy()
-    df['created_at'] = pd.to_datetime(df['created_at'])
-    df_open = df[df['state'] == 'open']
-    df_closed = df[df['state'] == 'closed']
+    setup_plot_style()
+    top_authors = pd.DataFrame(author_count.items(), columns=['Author', 'Commits']).nlargest(10, 'Commits')
 
-    plt.figure(figsize=(7,4))
-    plt.hist(df_open['created_at'], bins=10, alpha=0.7, label='Open PRs')
-    plt.hist(df_closed['created_at'], bins=10, alpha=0.7, label='Closed PRs')
+    plt.figure(figsize=(12, 8))
+    sns.barplot(x='Commits', y='Author', data=top_authors, palette='viridis', hue='Author', legend=False)
+    plt.title('Top 10 Commit Authors')
+    plt.xlabel('Number of Commits')
+    plt.ylabel('Author')
+    plt.tight_layout()
+    save_plot('author_activity.png', output_dir)
+
+def plot_pr_timeline(pr_df, output_dir):
+    """Plots the timeline of PRs (open and closed)."""
+    if pr_df.empty:
+        print("No PR timeline data to plot.")
+        return
+    setup_plot_style()
+    pr_df['created_at'] = pd.to_datetime(pr_df['created_at'])
+    pr_df['closed_at'] = pd.to_datetime(pr_df['closed_at'])
+
+    plt.figure(figsize=(15, 8))
+    
+    open_prs = pr_df[pr_df['state'] == 'open']
+    if not open_prs.empty:
+        plt.scatter(open_prs['created_at'], [1]*len(open_prs), color='blue', label='Open PRs', s=100, alpha=0.6)
+
+    closed_prs = pr_df[pr_df['state'].isin(['closed', 'merged'])]
+    if not closed_prs.empty:
+        plt.scatter(closed_prs['closed_at'], [0.5]*len(closed_prs), color='red', label='Closed PRs', s=100, alpha=0.6)
+    
+    plt.title('Pull Request Timeline')
+    plt.xlabel('Date')
+    plt.yticks([0.5, 1], ['Closed', 'Open'])
     plt.legend()
-    plt.title('PRs Created Over Time')
+    plt.grid(True)
+    save_plot('pr_timeline.png', output_dir)
+
+def plot_prs_per_day(pr_df, output_dir):
+    """Plots the number of PRs created each day."""
+    if pr_df.empty:
+        print("No PRs per day data to plot.")
+        return
+    setup_plot_style()
+    pr_df['created_date'] = pd.to_datetime(pr_df['created_at']).dt.date
+    prs_per_day = pr_df.groupby('created_date').size()
+    
+    plt.figure(figsize=(12, 6))
+    prs_per_day.plot(kind='bar', color=sns.color_palette("Paired"))
+    plt.title('Pull Requests Created Per Day')
     plt.xlabel('Date')
     plt.ylabel('Number of PRs')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+    plt.xticks(rotation=45, ha='right')
+    save_plot('prs_per_day.png', output_dir)
 
-def plot_prs_per_day(pr_df):
-    if pr_df.empty:
-        print("No PRs to plot per-day.")
+def plot_open_vs_closed_issues_counts(issues, output_dir):
+    """Plots the count of open vs. closed issues."""
+    if not issues:
+        print("No issue data to plot.")
         return
-    s = pd.to_datetime(pr_df["created_at"]).dt.date.value_counts().sort_index()
-    plt.figure(figsize=(7,4))
-    plt.plot(s.index, s.values, marker="o")
-    plt.title("PRs per Day")
-    plt.xlabel("Date")
-    plt.ylabel("PR count")
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
+    setup_plot_style()
+    issue_states = [issue['state'] for issue in issues]
+    df = pd.DataFrame(issue_states, columns=['State'])
+    
+    state_counts = df['State'].value_counts()
+    
+    plt.figure(figsize=(8, 8))
+    plt.pie(state_counts, labels=state_counts.index, autopct='%1.1f%%', startangle=90, colors=sns.color_palette("Set2"))
+    plt.title('Open vs. Closed Issues Count')
+    plt.axis('equal')
+    save_plot('issues_count.png', output_dir)
 
-def plot_open_vs_closed_issues_counts(issues):
-    open_count = sum(1 for i in issues if i['state'] == 'open')
-    closed_count = sum(1 for i in issues if i['state'] == 'closed')
-
-    plt.figure(figsize=(6,4))
-    plt.bar(['Open', 'Closed'], [open_count, closed_count])
-    plt.title('Open vs Closed Issues (Count)')
-    plt.ylabel('Number of Issues')
-    for idx, count in enumerate([open_count, closed_count]):
-        plt.text(idx, count + 0.5, str(count), ha='center', fontsize=11)
-    plt.tight_layout()
-    plt.show()
-
-def plot_issues_fixed_by(fixed_map):
+def plot_issues_fixed_by(fixed_map, output_dir):
+    """Plots a bar chart of issues fixed by user."""
     if not fixed_map:
-        print("No closed issues with resolvers to plot.")
+        print("No issue fixed data to plot.")
         return
-    df = pd.DataFrame(fixed_map.items(), columns=['User', 'Issues Fixed']).sort_values(by='Issues Fixed', ascending=False)
-    plt.figure(figsize=(7,4))
-    sns.barplot(data=df, x='User', y='Issues Fixed')
-    plt.title('Issues Fixed by Contributor')
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    plt.show()
-
-def plot_reviewer_author_heatmap(interactions):
-    if not interactions:
-        print("No reviewer/author interactions to plot.")
-        return
-    df = pd.DataFrame(interactions)
-    pivot = df.pivot_table(index="reviewer", columns="author", values="pr", aggfunc="nunique", fill_value=0)
-    plt.figure(figsize=(max(6, 0.6*len(pivot.columns)), max(4, 0.6*len(pivot.index))))
-    sns.heatmap(pivot, annot=True, fmt="d", cbar=True)
-    plt.title("Who Reviews Whom (PR count)")
-    plt.tight_layout()
-    plt.show()
-
-def plot_time_to_merge(pr_df):
-    merged = pr_df[pr_df["time_to_merge_days"].notna()]
-    if merged.empty:
-        print("No merged PRs to plot time-to-merge.")
-        return
-    plt.figure(figsize=(7,4))
-    plt.hist(merged["time_to_merge_days"], bins=10)
-    plt.title("Time to Merge (days)")
-    plt.xlabel("Days")
-    plt.ylabel("PR count")
-    plt.tight_layout()
-    plt.show()
+    setup_plot_style()
+    df = pd.DataFrame(fixed_map.items(), columns=['Author', 'Issues Fixed'])
+    df = df.sort_values('Issues Fixed', ascending=False)
+    
+    plt.figure(figsize=(12, 8))
+    sns.barplot(x='Issues Fixed', y='Author', data=df, palette='Spectral')
+    plt.title('Issues Fixed by User')
+    plt.xlabel('Number of Issues Fixed')
+    plt.ylabel('Author')
+    save_plot('issues_fixed_by.png', output_dir)

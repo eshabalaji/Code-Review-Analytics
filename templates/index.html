@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Analytics Input</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .form-card {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        .form-card h1 {
+            margin-bottom: 20px;
+            font-size: 2em;
+            color: #333;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        .submit-button {
+            background-color: #007bff;
+            color: white;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .submit-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-card">
+            <h1>GitHub Repository Analytics</h1>
+            <form action="/dashboard" method="GET">
+                <div class="input-group">
+                    <label for="owner">GitHub Owner</label>
+                    <input type="text" id="owner" name="owner" placeholder="e.g., kubernetes" required>
+                </div>
+                <div class="input-group">
+                    <label for="repo">Repository Name</label>
+                    <input type="text" id="repo" name="repo" placeholder="e.g., kubernetes" required>
+                </div>
+                <div class="input-group">
+                    <label for="token">GitHub Personal Access Token (optional)</label>
+                    <input type="password" id="token" name="token" placeholder="Your token">
+                </div>
+                <button type="submit" class="submit-button">View Dashboard</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
