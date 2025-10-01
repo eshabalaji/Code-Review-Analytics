@@ -31,7 +31,7 @@ def run_analytics():
     """Triggers the Python script to run the analytics and generate plots."""
     
     # Define the maximum time the script is allowed to run
-    MAX_RUN_TIME = 120 # 120 seconds (2 minutes)
+    MAX_RUN_TIME = 600 # 120 seconds (2 minutes)
 
     env = os.environ.copy()
     env['GITHUB_TOKEN'] = request.form.get('token')
@@ -40,11 +40,14 @@ def run_analytics():
     
     # Clean up empty environment variables (important for clean subprocess environments)
     if not env.get('GITHUB_TOKEN'):
-        if 'GITHUB_TOKEN' in env: del env['GITHUB_TOKEN']
+        if 'GITHUB_TOKEN' in env: 
+            del env['GITHUB_TOKEN']
     if not env.get('OWNER'):
-        if 'OWNER' in env: del env['OWNER']
+        if 'OWNER' in env: 
+            del env['OWNER']
     if not env.get('REPO'):
-        if 'REPO' in env: del env['REPO']
+        if 'REPO' in env: 
+            del env['REPO']
 
     # Log the command being executed for debugging
     logging.info(f"Running analytics for {env.get('OWNER')}/{env.get('REPO')} with timeout={MAX_RUN_TIME}s")

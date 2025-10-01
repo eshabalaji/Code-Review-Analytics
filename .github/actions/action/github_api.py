@@ -4,6 +4,7 @@ import requests
 import pandas as pd
 from datetime import datetime
 from collections import defaultdict
+from pathlib import Path
 
 # ===== CONFIG =====
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or input("Enter your GitHub Token: ").strip()
@@ -233,9 +234,6 @@ def top_reviewers_table(pr_df):
     return df
 
 # ===== Save helpers =====
-import pandas as pd
-from pathlib import Path
-
 # Define the single target directory for saving the CSV files
 CSV_DIR = Path("csv")
 

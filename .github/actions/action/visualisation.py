@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import os
-from datetime import datetime
 
 def setup_plot_style():
     """Sets up a clean, professional plot style."""
