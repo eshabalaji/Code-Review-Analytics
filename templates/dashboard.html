@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FONT AWESOME FOR BACK ARROW ICON -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -90,6 +92,17 @@
 <body class="flex items-start justify-center min-h-screen p-4">
 
     <div class="bg-white shadow-xl rounded-2xl p-8 max-w-7xl w-full">
+        
+        <!-- START BACK ARROW LINK - CHANGED href="index.html" to href="/" -->
+        <div class="mb-4">
+            <a href="/"
+               class="inline-flex items-center space-x-2 text-gray-500 hover:text-indigo-600 transition duration-300 font-medium">
+                <i class="fas fa-arrow-left"></i>
+                <span>Back to Repository Search</span>
+            </a>
+        </div>
+        <!-- END BACK ARROW LINK -->
+        
         <header class="text-center mb-8">
             <h1 id="repo-name" class="text-4xl font-bold text-gray-800 mb-2">GitHub Analytics</h1>
             <div class="inline-flex rounded-full bg-gray-200 p-1 mb-4">
@@ -106,6 +119,21 @@
                     Run Analytics
                 </button>
             </div>
+            
+            <!-- REPO DETAILS CARD (NEWLY ADDED) -->
+            <div id="repo-details-card" class="bg-gray-50 rounded-xl p-6 shadow-md mb-8 transition-opacity duration-300">
+                <h3 class="text-xl font-bold text-indigo-700 border-b border-indigo-200 pb-2 mb-4">Repository Overview</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-base">
+                    <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">⭐ Stars:</span> <span id="info-stars" class="font-bold text-gray-900">--</span></div>
+                    <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">🍴 Forks:</span> <span id="info-forks" class="font-bold text-gray-900">--</span></div>
+                    <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">👥 Contributors:</span> <span id="info-contributors" class="font-bold text-gray-900">--</span></div>
+                    <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">🚨 Open Issues/PRs:</span> <span id="info-open-issues" class="font-bold text-gray-900">--</span></div>
+                    <div class="p-2 bg-white rounded-lg col-span-2"><span class="font-semibold text-gray-700">🗓️ Created:</span> <span id="info-created" class="font-medium text-gray-600">--</span></div>
+                    <div class="p-2 bg-white rounded-lg col-span-2"><span class="font-semibold text-gray-700">🔄 Last Updated:</span> <span id="info-updated" class="font-medium text-gray-600">--</span></div>
+                </div>
+            </div>
+            <!-- END REPO DETAILS CARD -->
+
             <main class="plots-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                 <!-- Plot placeholders (images will be loaded/refreshed by JS) -->
                 <!-- Root-relative path /plots/ is used for consistency with server setup -->
@@ -268,8 +296,38 @@
             repoNameHeader.textContent = `GitHub Analytics`;
             document.getElementById('sub-header').textContent = 'Please provide owner and repo parameters in the URL.';
         }
+        
+        // --- Utility: Repo Details Display (NEW FUNCTION) ---
+        const displayRepoDetails = (info) => {
+            const card = document.getElementById('repo-details-card');
 
-        // --- Analytics Run Logic (unchanged) ---
+            if (!info) {
+                // If no info, set opacity low to visually indicate lack of data
+                card.classList.add('opacity-50');
+                // Optionally reset content to default state
+                document.getElementById('info-stars').textContent = '--';
+                document.getElementById('info-forks').textContent = '--';
+                document.getElementById('info-contributors').textContent = '--';
+                document.getElementById('info-open-issues').textContent = '--';
+                document.getElementById('info-created').textContent = '--';
+                document.getElementById('info-updated').textContent = '--';
+                return;
+            }
+            
+            card.classList.remove('opacity-50'); // Ensure visible
+            
+            // Fallback to 'N/A' if data points are missing from the backend response
+            document.getElementById('info-stars').textContent = info.stars ? info.stars.toLocaleString() : '0';
+            document.getElementById('info-forks').textContent = info.forks ? info.forks.toLocaleString() : '0';
+            document.getElementById('info-contributors').textContent = info.contributors ? info.contributors.toLocaleString() : '0';
+            document.getElementById('info-open-issues').textContent = info.open_issues ? info.open_issues.toLocaleString() : '0';
+            
+            // Simple date formatting (assuming backend returns ISO string)
+            document.getElementById('info-created').textContent = info.created_at ? new Date(info.created_at).toLocaleDateString() : 'N/A';
+            document.getElementById('info-updated').textContent = info.updated_at ? new Date(info.updated_at).toLocaleDateString() : 'N/A';
+        };
+
+        // --- Analytics Run Logic (updated to call displayRepoDetails) ---
         async function runAnalytics() {
             if (!owner || !repo) {
                 showModal("Owner and repository details are missing from the URL.");
@@ -293,6 +351,9 @@
                     })
                 });
                 const data = await response.json();
+                
+                // Always attempt to display repo details, even if the status is 'error'
+                displayRepoDetails(data.repo_info);
                 
                 if (data.status === 'success') {
                     console.log("✅ Analytics script ran successfully.");
@@ -490,6 +551,9 @@
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
+            // Set initial state for details card
+            displayRepoDetails(null); 
+            
             // Initial setup: If URL parameters are present, run analytics immediately
             if (owner && repo) {
                 runAnalytics();

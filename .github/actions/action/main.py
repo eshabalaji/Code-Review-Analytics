@@ -1,7 +1,8 @@
 import pandas as pd
 from datetime import datetime
-import os  # Added import for file system operations
-import sys # Added import for system path management
+import os 
+import sys 
+import json # ADDED: Required for structured data output
 
 # Add the directory containing your scripts to the Python path
 # This is crucial when the script is run from a different CWD (e.g., from app.py)
@@ -26,22 +27,42 @@ def main():
         print("Failed to fetch repository data. Exiting.")
         return
 
-    # Printing to stdout is still useful for debugging the backend
-    print(f"Repository: {repo_data['name']}")
-    print(f"Description: {repo_data['description']}")
-    print(f"Stars: {repo_data['stargazers_count']}, Forks: {repo_data['forks_count']}")
-    print(f"Open Issues (incl PRs): {repo_data['open_issues_count']}")
-    created = datetime.strptime(repo_data['created_at'], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
-    updated = datetime.strptime(repo_data['updated_at'], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
-    print(f"Created: {created}, Updated: {updated}")
-
     # Commits
     commits = fetch_commits()
     date_count, author_count = group_commits_by_date_and_author(commits)
 
     # Contributors
     contributors = fetch_contributors()
+    
+    # Format required repo info for the frontend
+    created = datetime.strptime(repo_data['created_at'], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
+    updated = datetime.strptime(repo_data['updated_at'], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d")
+    
+    # Structure the required repo info for the frontend
+    repo_stats = {
+        "name": repo_data['name'],
+        "owner": repo_data['owner']['login'],
+        "stars": repo_data['stargazers_count'],
+        "forks": repo_data['forks_count'],
+        "open_issues": repo_data['open_issues_count'],
+        "created_at": created,
+        "updated_at": updated,
+        "contributors": len(contributors)
+    }
+
+    # CRITICAL: Print the structured data with markers so Flask can parse it
+    print("---REPO-INFO-START---")
+    print(json.dumps(repo_stats))
+    print("---REPO-INFO-END---")
+    
+    # --- Logging / Debugging (Optional, for server console only) ---
+    print(f"Repository: {repo_data['name']}")
+    print(f"Description: {repo_data['description']}")
+    print(f"Stars: {repo_data['stargazers_count']}, Forks: {repo_data['forks_count']}")
+    print(f"Open Issues (incl PRs): {repo_data['open_issues_count']}")
+    print(f"Created: {created}, Updated: {updated}")
     print(f"Total Contributors: {len(contributors)}")
+    # -----------------------------------------------------------------
 
     # PRs (detailed) + interactions + explicit commenters/reviewers artifacts
     pr_data, interactions, review_events, review_comments, issue_comments = fetch_pull_requests_with_details()

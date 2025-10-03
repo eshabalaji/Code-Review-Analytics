@@ -60,25 +60,24 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="form-card">
-            <h1>GitHub Repository Analytics</h1>
-            <form action="/dashboard" method="GET">
-                <div class="input-group">
-                    <label for="owner">GitHub Owner</label>
-                    <input type="text" id="owner" name="owner" placeholder="e.g., kubernetes" required>
-                </div>
-                <div class="input-group">
-                    <label for="repo">Repository Name</label>
-                    <input type="text" id="repo" name="repo" placeholder="e.g., kubernetes" required>
-                </div>
-                <div class="input-group">
-                    <label for="token">GitHub Personal Access Token (optional)</label>
-                    <input type="password" id="token" name="token" placeholder="Your token">
-                </div>
-                <button type="submit" class="submit-button">View Dashboard</button>
-            </form>
-        </div>
-    </div>
+    <div class="container">
+        <div class="form-card">
+            <h1>GitHub Repository Analytics</h1>
+            <!-- *** FIX: Changed action to /process-input to intercept the POST data *** -->
+            <form action="/process-input" method="POST">
+                <div class="input-group">
+                    <label for="owner">GitHub Owner</label>
+                    <input type="text" id="owner" name="owner" placeholder="e.g., kubernetes" required>
+                
+                
+                    <label for="repo">Repository Name</label>
+                    <input type="text" id="repo" name="repo" placeholder="e.g., kubernetes" required>
+                    <label for="token">GitHub Personal Access Token (optional)</label>
+                    <input type="password" id="token" name="token" placeholder="Your token">
+                </div>
+                <button type="submit" class="submit-button">View Dashboard</button>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
