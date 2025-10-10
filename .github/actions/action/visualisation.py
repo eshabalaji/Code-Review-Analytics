@@ -3,6 +3,9 @@ import seaborn as sns
 import pandas as pd
 import os
 
+# Cloud Run safe temp directory for saving files
+DEFAULT_OUTPUT_DIR = "/tmp"
+
 def setup_plot_style():
     """Sets up a clean, professional plot style."""
     sns.set_style("whitegrid")
@@ -15,12 +18,16 @@ def setup_plot_style():
     plt.rcParams["ytick.labelsize"] = 10
     plt.rcParams["figure.titleweight"] = "bold"
 
-def save_plot(filename, output_dir):
+def save_plot(filename, output_dir=None):
     """Saves the current plot to a file and closes it."""
     try:
+        if output_dir is None:
+            output_dir = DEFAULT_OUTPUT_DIR  # Use /tmp if nothing passed
+
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         filepath = os.path.join(output_dir, filename)
+
         plt.tight_layout()
         plt.savefig(filepath)
         print(f"+ Saved plot to {filepath}")

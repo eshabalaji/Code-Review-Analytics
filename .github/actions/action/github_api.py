@@ -7,9 +7,16 @@ from collections import defaultdict
 from pathlib import Path
 
 # ===== CONFIG =====
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN") or input("Enter your GitHub Token: ").strip()
-OWNER = os.getenv("OWNER") or input("Enter repo owner: ").strip()
-REPO = os.getenv("REPO") or input("Enter repo name: ").strip()
+# ===== CONFIG =====
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+OWNER = os.getenv("OWNER")
+REPO = os.getenv("REPO")
+
+if not GITHUB_TOKEN or not OWNER or not REPO:
+    raise EnvironmentError(
+        "Missing one or more required environment variables: GITHUB_TOKEN, OWNER, REPO"
+    )
+
 
 os.environ['GITHUB_TOKEN'] = GITHUB_TOKEN
 HEADERS = {
@@ -235,7 +242,8 @@ def top_reviewers_table(pr_df):
 
 # ===== Save helpers =====
 # Define the single target directory for saving the CSV files
-CSV_DIR = Path("csv")
+# Cloud Run allows writing only to /tmp directory
+CSV_DIR = Path("/tmp/csv")
 
 def save_dataframe_to_csv(data, filename):
     """A helper function to ensure the directory exists, create the DataFrame, and save the CSV."""
@@ -250,23 +258,48 @@ def save_dataframe_to_csv(data, filename):
     df.to_csv(file_path, index=False)
     print(f"Saved {file_path}")
 
-def save_contributors_csv(contributors):
-    save_dataframe_to_csv(contributors, "contributors.csv")
+def save_contributors_csv(contributors, output_dir="/tmp/csv"):
+    os.makedirs(output_dir, exist_ok=True)
+    path = os.path.join(output_dir, "contributors.csv")
+    pd.DataFrame(contributors).to_csv(path, index=False)
+    print(f"+ Saved contributors CSV to {path}")
 
-def save_prs_csv(prs):
-    save_dataframe_to_csv(prs, "pull_requests.csv")
 
-def save_issues_csv(issues):
-    save_dataframe_to_csv(issues, "issues.csv")
+def save_prs_csv(contributors, output_dir="/tmp/csv"):
+    os.makedirs(output_dir, exist_ok=True)
+    path = os.path.join(output_dir, "pull_requests.csv")
+    pd.DataFrame(contributors).to_csv(path, index=False)
+    print(f"+ Saved contributors CSV to {path}")
 
-def save_review_events_csv(review_events):
-    save_dataframe_to_csv(review_events, "review_events.csv")
 
-def save_review_comments_csv(review_comments):
-    save_dataframe_to_csv(review_comments, "review_comments.csv")
+def save_issues_csv(contributors, output_dir="/tmp/csv"):
+    os.makedirs(output_dir, exist_ok=True)
+    path = os.path.join(output_dir, "issues.csv")
+    pd.DataFrame(contributors).to_csv(path, index=False)
+    print(f"+ Saved contributors CSV to {path}")
 
-def save_issue_comments_csv(issue_comments):
-    save_dataframe_to_csv(issue_comments, "issue_comments.csv")
+
+def save_review_events_csv(contributors, output_dir="/tmp/csv"):
+    os.makedirs(output_dir, exist_ok=True)
+    path = os.path.join(output_dir, "review_events.csv")
+    pd.DataFrame(contributors).to_csv(path, index=False)
+    print(f"+ Saved contributors CSV to {path}")
+
+
+def save_review_comments_csv(contributors, output_dir="/tmp/csv"):
+    os.makedirs(output_dir, exist_ok=True)
+    path = os.path.join(output_dir, "review_comments.csv")
+    pd.DataFrame(contributors).to_csv(path, index=False)
+    print(f"+ Saved contributors CSV to {path}")
+
+
+def save_issue_comments_csv(contributors, output_dir="/tmp/csv"):
+    os.makedirs(output_dir, exist_ok=True)
+    path = os.path.join(output_dir, "issue_comments.csv")
+    pd.DataFrame(contributors).to_csv(path, index=False)
+    print(f"+ Saved contributors CSV to {path}")
+
+
 
 def save_all_comments_csv(review_comments, issue_comments):
     """Combine both comment types into a single CSV for quick checks."""
