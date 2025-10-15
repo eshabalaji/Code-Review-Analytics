@@ -25,6 +25,7 @@ app.logger.setLevel(logging.DEBUG)
 
 
 # Define consistent temporary directory paths
+# This path relies on tempfile.gettempdir() which typically resolves to /tmp in a container
 TEMP_ROOT = os.path.join(tempfile.gettempdir(), 'github_analytics')
 PLOTS_DIR = os.path.join(TEMP_ROOT, 'plots')
 CSVS_DIR = os.path.join(TEMP_ROOT, 'csv')
@@ -37,20 +38,36 @@ def ensure_dirs():
     """Ensure temp directories exist with proper permissions"""
     try:
         for directory in [PLOTS_DIR, CSVS_DIR]:
+            # Use os.makedirs with exist_ok=True
             if not os.path.exists(directory):
                 os.makedirs(directory, mode=0o755, exist_ok=True)
+            
+            # Re-check permissions is useful, especially in container environments
             if not os.access(directory, os.W_OK):
                 logger.error(f"Directory not writable: {directory}")
-                raise PermissionError(f"Directory not writable: {directory}")
+                # Raising an exception here will prevent Gunicorn from starting if permissions are truly wrong
+                raise PermissionError(f"Directory not writable: {directory}. Check Docker permissions.")
+
         logger.info(f"Temp directories created successfully at {TEMP_ROOT}")
     except Exception as e:
-        logger.error(f"Failed to create temp directories: {str(e)}")
+        logger.error(f"Failed to create temp directories: {str(e)}", exc_info=True)
+        # This critical failure must halt application loading in production
         raise
 
+# --- CRITICAL FIX: Run essential setup immediately upon module import ---
+# This ensures that Gunicorn successfully imports the application and the directories exist 
+# before the first request, preventing the "site not reachable" error.
+try:
+    ensure_dirs()
+except Exception as e:
+    logger.critical(f"FATAL: Could not initialize temp directories during app startup. Exiting. Error: {e}")
+    # In a real deployment, a failure here will cause Gunicorn to fail, which is correct behavior.
+    exit(1) # Exit is used here to halt execution if a critical setup step fails
 
 def clear_temp_dirs():
     """Clear temp directories before a run to avoid mixing artifacts."""
     try:
+        # Remove and recreate for a clean slate
         if os.path.exists(TEMP_ROOT):
             shutil.rmtree(TEMP_ROOT)
     except Exception as e:
@@ -67,6 +84,7 @@ def cleanup_on_exit():
     except Exception as e:
         app.logger.warning(f"Cleanup at exit failed: {e}")
 
+# This will run when the process exits, but Gunicorn manages process restarts
 atexit.register(cleanup_on_exit)
 
 
@@ -80,8 +98,12 @@ def run_analysis(owner, repo_name, user_token):
     env = os.environ.copy()
     env['OWNER'] = owner
     env['REPO'] = repo_name
+    # GITHUB_TOKEN is used by the analytics script to authenticate with the GitHub API
     if user_token:
         env['GITHUB_TOKEN'] = user_token
+    # Pass the location of the temporary directories to the subprocess
+    env['PLOTS_DIR'] = PLOTS_DIR
+    env['CSVS_DIR'] = CSVS_DIR
 
     if not os.path.exists(ACTION_MAIN_PATH):
         logger.error(f"Analysis script not found at {ACTION_MAIN_PATH}")
@@ -100,7 +122,7 @@ def run_analysis(owner, repo_name, user_token):
             text=True,
             check=False,
             env=env,
-            timeout=300
+            timeout=300 # 5 minute timeout for long-running jobs
         )
 
         stdout_output = result.stdout or ""
@@ -129,8 +151,7 @@ def run_analysis(owner, repo_name, user_token):
                 json_str = stdout_output.split(start_tag)[1].split(end_tag)[0].strip()
                 repo_info = json.loads(json_str)
             except json.JSONDecodeError:
-                logger.error('Failed to parse JSON from script output.')
-                # Continue execution to try and list files, but set status to error
+                logger.error('Failed to parse JSON from script output. Continuing to check for files...')
 
         # list artifacts in temp dirs (Crucial part: relies on main.py writing to PLOTS_DIR/CSVS_DIR)
         plots = [f for f in os.listdir(PLOTS_DIR) if f.lower().endswith('.png')]
@@ -170,7 +191,6 @@ def run_analytics_route():
     try:
         if not request.is_json:
             logger.warning('Request must be JSON')
-            # Changed to return a custom error JSON instead of aborting
             return jsonify({
                 'status': 'error', 
                 'message': 'Request must be JSON.',
@@ -237,7 +257,7 @@ def serve_csv(filename):
         abort(500)
 
 
-# simple healthcheck
+# simple healthcheck required by many AWS services
 @app.route('/healthz', methods=['GET'])
 def healthz():
     return jsonify({'status': 'ok', 'time': int(time.time())})
@@ -262,11 +282,7 @@ def internal_server_error(e):
 
 
 if __name__ == '__main__':
-    try:
-        ensure_dirs()
-    except Exception as e:
-        logger.critical(f"FATAL: Could not initialize temp directories. Exiting. Error: {e}")
-        exit(1)
-
-    # Use 0.0.0.0 for hostability in containers/servers
+    # When running locally using python app.py, this block executes.
+    # We already called ensure_dirs() above, so we just run the app.
+    # Note: For production (Gunicorn), this block is skipped.
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=True)
