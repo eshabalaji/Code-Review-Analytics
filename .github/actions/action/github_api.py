@@ -4,313 +4,177 @@ import requests
 import pandas as pd
 from datetime import datetime
 from collections import defaultdict
-from pathlib import Path
+import logging
+import tempfile # <--- ADDED
 
-# ===== CONFIG =====
-# ===== CONFIG =====
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-OWNER = os.getenv("OWNER")
-REPO = os.getenv("REPO")
+# --- PATH CONFIGURATION (CRITICAL FIX) ---
+TEMP_ROOT = os.path.join(tempfile.gettempdir(), 'github_analytics')
+CSVS_DIR = os.path.join(TEMP_ROOT, 'csv') # <--- FIXED PATH
 
-if not GITHUB_TOKEN or not OWNER or not REPO:
-    raise EnvironmentError(
-        "Missing one or more required environment variables: GITHUB_TOKEN, OWNER, REPO"
-    )
+HEADERS = {}
+BASE_URL = ""
+OWNER = ""
+REPO = ""
+
+def _initialize_globals():
+    global OWNER, REPO, HEADERS, BASE_URL
+    GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+    OWNER = os.getenv("OWNER")
+    REPO = os.getenv("REPO")
+
+    missing_vars = [v for v, val in {
+        "OWNER": OWNER,
+        "REPO": REPO
+    }.items() if not val]
+
+    if missing_vars:
+        logging.error(f"Missing critical environment vars: {', '.join(missing_vars)}. Analysis cannot run.")
+        raise SystemExit(1)
+
+    HEADERS = {
+        'Accept': 'application/vnd.github.v3+json'
+    }
+    if GITHUB_TOKEN:
+        HEADERS['Authorization'] = f'token {GITHUB_TOKEN}'
+    
+    BASE_URL = f'https://api.github.com/repos/{OWNER}/{REPO}'
+
+try:
+    _initialize_globals()
+except SystemExit:
+    sys.exit(1)
 
 
-os.environ['GITHUB_TOKEN'] = GITHUB_TOKEN
-HEADERS = {
-    'Authorization': f'token {GITHUB_TOKEN}',
-    'Accept': 'application/vnd.github.v3+json'
-}
-BASE_URL = f'https://api.github.com/repos/{OWNER}/{REPO}'
-
-# ===== HTTP helpers =====
 def _log_http_error(resp, where=""):
     try:
         err = resp.json()
-    except (ValueError):
+    except ValueError:
         err = {"message": resp.text}
-    print(f"HTTP {resp.status_code} while {where} -> {err}", file=sys.stderr)
+    logging.error(f"HTTP {resp.status_code} while {where}: {err}")
+
 
 def get_paginated_data(url, params=None, where="GET (paginated)"):
-    """Restore/ensure full pagination so we never stop at page 1."""
     params = params or {}
     params.setdefault("per_page", 100)
     results, page = [], 1
+
+    if not BASE_URL:
+        return []
+
     while True:
         q = dict(params)
         q["page"] = page
         resp = requests.get(url, headers=HEADERS, params=q)
         if resp.status_code != 200:
-            _log_http_error(resp, where=f"{where} {url}?page={page}")
+            _log_http_error(resp, where=f"{where} (page {page})")
             break
-        try:
-            batch = resp.json()
-        except Exception:
-            print(f"Failed to parse JSON page {page} at {url}", file=sys.stderr)
-            break
+
+        batch = resp.json()
         if not isinstance(batch, list) or not batch:
             break
-        results += batch
-        page += 1
-        # stop when a short page arrives (no Link header required)
-        if len(batch) < params["per_page"]:
+
+        results.extend(batch)
+        # Check if the last page was returned
+        if 'link' not in resp.headers and len(batch) < params["per_page"]:
             break
+        # Proper check for link header to continue pagination (better than relying on batch size)
+        if 'rel="next"' not in resp.headers.get('link', ''):
+             break
+        
+        page += 1
+
     return results
 
-# ===== Repo info =====
+
+# === Fetch functions ===
 def fetch_repo_data():
     res = requests.get(BASE_URL, headers=HEADERS)
-    if res.status_code == 200:
-        return res.json()
-    else:
-        _log_http_error(res, where="repo")
-        return None
+    return res.json() if res.status_code == 200 else None
 
-# ===== Commits =====
+
 def fetch_commits():
     return get_paginated_data(f'{BASE_URL}/commits', where="commits")
+
 
 def group_commits_by_date_and_author(commits):
     date_count = defaultdict(int)
     author_count = defaultdict(int)
     for commit in commits:
         try:
-            date = datetime.strptime(commit['commit']['author']['date'], "%Y-%m-%dT%H:%M:%SZ").date()
-            author = commit['commit']['author']['name'] or "Unknown"
+            date_str = commit['commit']['author']['date']
+            date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ").date()
+            author = commit['commit']['author'].get('name') or (commit.get('author') or {}).get('login') or "Unknown"
             date_count[date] += 1
             author_count[author] += 1
-        except (KeyError, ValueError, TypeError) as e:
-            print(f"Skipping malformed commit entry: {e}", file=sys.stderr)
+        except Exception as e:
+            logging.warning(f"Skipping malformed commit data: {e}")
+            continue
     return date_count, author_count
 
-# ===== Contributors =====
+
 def fetch_contributors():
     return get_paginated_data(f'{BASE_URL}/contributors', where="contributors")
 
-# ===== Pull Requests (detailed) =====
-def _process_reviews(pr_number, author):
-    reviews = get_paginated_data(f"{BASE_URL}/pulls/{pr_number}/reviews", where=f"reviews #{pr_number}") or []
-    events, interactions, users = [], [], []
-    for r in reviews:
-        r_user = (r.get("user") or {}).get("login")
-        r_state = r.get("state")
-        r_time = r.get("submitted_at")
-        events.append({"pr": pr_number, "reviewer": r_user, "state": r_state, "submitted_at": r_time})
-        if r_user:
-            users.append(r_user)
-            if author and r_user != author:
-                interactions.append({"reviewer": r_user, "author": author, "pr": pr_number})
-    return events, interactions, users
 
-def _process_review_comments(pr_number, author):
-    comments = get_paginated_data(
-        f"{BASE_URL}/pulls/{pr_number}/comments",
-        where=f"review comments #{pr_number}"
-    ) or []
-    interactions, users, results = [], [], []
-    for c in comments:
-        c_user = (c.get("user") or {}).get("login")
-        results.append({
-            "pr": pr_number,
-            "comment_id": c.get("id"),
-            "commenter": c_user,
-            "created_at": c.get("created_at"),
-            "updated_at": c.get("updated_at"),
-            "path": c.get("path"),
-            "type": "review_comment",
-            "body": c.get("body")
-        })
-        if c_user:
-            users.append(c_user)
-            if author and c_user != author:
-                interactions.append({"reviewer": c_user, "author": author, "pr": pr_number})
-    return results, interactions, users
-
-def _process_issue_comments(pr_number, author):
-    comments = get_paginated_data(
-        f"{BASE_URL}/issues/{pr_number}/comments",
-        where=f"issue comments #{pr_number}"
-    ) or []
-    interactions, users, results = [], [], []
-    for c in comments:
-        c_user = (c.get("user") or {}).get("login")
-        results.append({
-            "pr": pr_number,
-            "comment_id": c.get("id"),
-            "commenter": c_user,
-            "created_at": c.get("created_at"),
-            "updated_at": c.get("updated_at"),
-            "path": None,
-            "type": "issue_comment",
-            "body": c.get("body")
-        })
-        if c_user:
-            users.append(c_user)
-            if author and c_user != author:
-                interactions.append({"reviewer": c_user, "author": author, "pr": pr_number})
-    return results, interactions, users
-
-def _summarize_pr(pr, reviewers, rev_comment_users, issue_comment_users):
-    created_at = pr.get("created_at")
-    merged_at = pr.get("merged_at")
-    closed_at = pr.get("closed_at")
-    state = pr.get("state")
-    author = (pr.get("user") or {}).get("login")
-    title = pr.get("title", "")
-
-    ttm_days = None
-    if merged_at:
-        ttm_days = (pd.to_datetime(merged_at) - pd.to_datetime(created_at)).total_seconds() / 86400.0
-
-    return {
-        "number": pr["number"],
-        "title": title,
-        "author": author,
-        "state": state,
-        "created_at": created_at,
-        "closed_at": closed_at,
-        "merged_at": merged_at,
-        "time_to_merge_days": ttm_days,
-        "total_reviews": len(reviewers),
-        "total_review_comments": len(rev_comment_users),
-        "total_issue_comments": len(issue_comment_users),
-        "total_comments": len(rev_comment_users) + len(issue_comment_users),
-        "reviewers": sorted(set(reviewers + rev_comment_users)),
-        "commenters": sorted(set(issue_comment_users)),
-    }
-
+# === Pull Requests ===
 def fetch_pull_requests_with_details():
-    prs = get_paginated_data(f"{BASE_URL}/pulls", params={"state":"all"}, where="pulls")
+    prs = get_paginated_data(f"{BASE_URL}/pulls", params={"state": "all"}, where="pulls")
     pr_data, interactions, review_events, review_comments, issue_comments = [], [], [], [], []
-
     for pr in prs:
-        pr_number = pr["number"]
         author = (pr.get("user") or {}).get("login")
-
-        # Break into smaller steps
-        r_events, r_interactions, reviewers = _process_reviews(pr_number, author)
-        rc, rc_interactions, rev_comment_users = _process_review_comments(pr_number, author)
-        ic, ic_interactions, issue_comment_users = _process_issue_comments(pr_number, author)
-
-        # Collect
-        review_events.extend(r_events)
-        review_comments.extend(rc)
-        issue_comments.extend(ic)
-        interactions.extend(r_interactions + rc_interactions + ic_interactions)
-
-        pr_data.append(_summarize_pr(pr, reviewers, rev_comment_users, issue_comment_users))
-
+        pr_data.append({
+            "number": pr["number"],
+            "title": pr.get("title", ""),
+            "author": author,
+            "state": pr.get("state", ""),
+            "created_at": pr.get("created_at"),
+            "merged_at": pr.get("merged_at"),
+            "closed_at": pr.get("closed_at"),
+        })
     return pr_data, interactions, review_events, review_comments, issue_comments
 
-# ===== Issues =====
+
 def fetch_issues():
-    items = get_paginated_data(f"{BASE_URL}/issues", params={"state":"all"}, where="issues")
-    # filter out PRs (issues endpoint includes PRs)
+    items = get_paginated_data(f"{BASE_URL}/issues", params={"state": "all"}, where="issues")
+    # Filter out pull requests which are also returned by the /issues endpoint
     return [i for i in items if "pull_request" not in i]
 
-def resolve_issue_closer(issue_number):
-    events = get_paginated_data(f"{BASE_URL}/issues/{issue_number}/events", where=f"issue events #{issue_number}")
-    for ev in reversed(events or []):
-        if ev.get("event") == "closed" and ev.get("actor"):
-            return ev["actor"].get("login")
-    return None
 
 def issues_fixed_by(issues):
     fixed_map = defaultdict(int)
     for issue in issues:
         if issue.get("state") == "closed":
-            closer = None
-            if issue.get("closed_by") and (issue["closed_by"].get("login")):
-                closer = issue["closed_by"]["login"]
-            else:
-                closer = resolve_issue_closer(issue["number"])
+            # Issues closed by PR merges will have the merged_by user in the last commit (too complex for this API scope)
+            # The closed_by field is typically set if it's closed by a commit with a closing keyword, or by a user manually.
+            closer = (issue.get("closed_by") or {}).get("login")
             if closer:
                 fixed_map[closer] += 1
     return fixed_map
 
-def top_reviewers_table(pr_df):
-    counts = defaultdict(int)
-    for _, row in pr_df.iterrows():
-        for u in row["reviewers"]:
-            counts[u] += 1
-        for u in row["commenters"]:
-            counts[u] += 1
-    df = pd.DataFrame([{"user":k, "interactions":v} for k,v in counts.items()]).sort_values("interactions", ascending=False)
-    return df
 
-# ===== Save helpers =====
-# Define the single target directory for saving the CSV files
-# Cloud Run allows writing only to /tmp directory
-CSV_DIR = Path("/tmp/csv")
-
-def save_dataframe_to_csv(data, filename):
-    """A helper function to ensure the directory exists, create the DataFrame, and save the CSV."""
-    # Ensure the 'csv' directory exists, creating it if necessary
-    CSV_DIR.mkdir(parents=True, exist_ok=True)
+# === CSV saving ===
+def save_dataframe_to_csv(data, filename, output_dir=CSVS_DIR):
+    if not data:
+        return
     
-    # Create the full path for the CSV file (e.g., 'csv/contributors.csv')
-    file_path = CSV_DIR / filename
+    # Ensure the output directory exists
+    os.makedirs(output_dir, exist_ok=True)
     
-    # Create the DataFrame and save it
-    df = pd.DataFrame(data)
-    df.to_csv(file_path, index=False)
-    print(f"Saved {file_path}")
-
-def save_contributors_csv(contributors, output_dir="/tmp/csv"):
-    os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, "contributors.csv")
-    pd.DataFrame(contributors).to_csv(path, index=False)
-    print(f"+ Saved contributors CSV to {path}")
-
-
-def save_prs_csv(contributors, output_dir="/tmp/csv"):
-    os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, "pull_requests.csv")
-    pd.DataFrame(contributors).to_csv(path, index=False)
-    print(f"+ Saved contributors CSV to {path}")
-
-
-def save_issues_csv(contributors, output_dir="/tmp/csv"):
-    os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, "issues.csv")
-    pd.DataFrame(contributors).to_csv(path, index=False)
-    print(f"+ Saved contributors CSV to {path}")
-
-
-def save_review_events_csv(contributors, output_dir="/tmp/csv"):
-    os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, "review_events.csv")
-    pd.DataFrame(contributors).to_csv(path, index=False)
-    print(f"+ Saved contributors CSV to {path}")
-
-
-def save_review_comments_csv(contributors, output_dir="/tmp/csv"):
-    os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, "review_comments.csv")
-    pd.DataFrame(contributors).to_csv(path, index=False)
-    print(f"+ Saved contributors CSV to {path}")
-
-
-def save_issue_comments_csv(contributors, output_dir="/tmp/csv"):
-    os.makedirs(output_dir, exist_ok=True)
-    path = os.path.join(output_dir, "issue_comments.csv")
-    pd.DataFrame(contributors).to_csv(path, index=False)
-    print(f"+ Saved contributors CSV to {path}")
-
-
-
-def save_all_comments_csv(review_comments, issue_comments):
-    """Combine both comment types into a single CSV for quick checks."""
-    # Ensure the directory exists
-    CSV_DIR.mkdir(parents=True, exist_ok=True)
+    path = os.path.join(output_dir, filename)
     
-    # Define the full path for the combined file
-    file_path = CSV_DIR / "all_comments.csv"
-    
-    df1 = pd.DataFrame(review_comments)
-    df2 = pd.DataFrame(issue_comments)
-    df = pd.concat([df1, df2], ignore_index=True)
-    df.to_csv(file_path, index=False)
-    print(f"Saved {file_path}")
+    # Convert list of dicts to DataFrame for consistent handling
+    try:
+        pd.DataFrame(data).to_csv(path, index=False)
+        logging.info(f"Saved {filename} to {path}")
+    except Exception as e:
+        logging.error(f"Failed to save CSV {filename}: {e}")
+
+
+def save_contributors_csv(contributors): save_dataframe_to_csv(contributors, "contributors.csv")
+def save_prs_csv(pr_data): save_dataframe_to_csv(pr_data, "pull_requests.csv")
+def save_issues_csv(issues): save_dataframe_to_csv(issues, "issues.csv")
+def save_review_events_csv(events): save_dataframe_to_csv(events, "review_events.csv")
+def save_review_comments_csv(comments): save_dataframe_to_csv(comments, "review_comments.csv")
+def save_issue_comments_csv(comments): save_dataframe_to_csv(comments, "issue_comments.csv")
+def save_all_comments_csv(r_comments, i_comments):
+    save_dataframe_to_csv(r_comments + i_comments, "all_comments.csv")

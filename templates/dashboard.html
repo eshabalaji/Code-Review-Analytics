@@ -1,180 +1,101 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>GitHub Analytics Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FONT AWESOME FOR BACK ARROW ICON -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            color: #1f2937;
-        }
-        /* Style for active tab button */
-        .tab-button.active {
-            background-color: #4f46e5;
-            color: white;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        /* Hide inactive tab content */
-        .tab-content {
-            display: none;
-        }
-        /* Show active tab content */
-        .tab-content.active {
-            display: block;
-        }
-        
-        /* Modal Styles (General) */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6); /* Slightly darker overlay */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-        }
-        .modal-content {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-            max-width: 400px;
-            text-align: center;
-        }
-
-        /* Override for the large CSV Viewer Modal */
-        #csv-viewer-modal .modal-content {
-            max-width: 90%; /* Make it much wider for data tables */
-            width: 100%;
-            text-align: left;
-            padding: 1.5rem;
-        }
-
-        /* Container for the CSV table with sticky header (used inside modal) */
-        .csv-table-container {
-            max-height: 500px; /* Reduced to fit viewport inside modal */
-            overflow-y: auto;
-            border-radius: 0.5rem;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+        .tab-button.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        #results-container { display: none; }
+        .modal { position: fixed; top: 0; left: 0; width:100%; height:100%; background-color: rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:50;}
+        .modal-content { background-color: white; padding: 2rem; border-radius:1rem; box-shadow:0 10px 20px rgba(0,0,0,0.3); max-width:400px; text-align:center; }
+        #csv-viewer-modal .modal-content { max-width:90%; width:100%; text-align:left; padding:1.5rem; }
+        .csv-table-container { max-height:500px; overflow-y:auto; border-radius:0.5rem; box-shadow: 0 0 10px rgba(0,0,0,0.05); background-color:#fff; }
+        table { width:100%; border-collapse:collapse; }
+        th, td { padding:0.75rem; text-align:left; border-bottom: 1px solid #e5e7eb; font-size:0.875rem; }
+        th { background-color:#f9fafb; font-weight:600; position:sticky; top:0; z-index:10; }
+        /* Plot styles to ensure images scale correctly */
+        .plot-card {
             background-color: #ffffff;
-            /* Note: margin-top is removed since it's inside the modal content now */
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 0.875rem; /* Smaller font for dense data */
-        }
-        th {
-            background-color: #f9fafb;
-            font-weight: 600;
-            position: sticky; /* Makes header sticky for scrolling content */
-            top: 0;
-            z-index: 10;
+        .plot-img {
+            max-width: 100%;
+            height: auto;
+            display: block; /* Removes bottom space under image */
         }
     </style>
 </head>
-<body class="flex items-start justify-center min-h-screen p-4">
+<body class="flex flex-col items-center min-h-screen p-4">
 
     <div class="bg-white shadow-xl rounded-2xl p-8 max-w-7xl w-full">
-        
-        <!-- START BACK ARROW LINK - CHANGED href="index.html" to href="/" -->
-        <div class="mb-4">
-            <a href="/"
-               class="inline-flex items-center space-x-2 text-gray-500 hover:text-indigo-600 transition duration-300 font-medium">
-                <i class="fas fa-arrow-left"></i>
-                <span>Back to Repository Search</span>
-            </a>
-        </div>
-        <!-- END BACK ARROW LINK -->
-        
-        <header class="text-center mb-8">
-            <h1 id="repo-name" class="text-4xl font-bold text-gray-800 mb-2">GitHub Analytics</h1>
-            <div class="inline-flex rounded-full bg-gray-200 p-1 mb-4">
-                <button id="tab-plots" class="tab-button active px-4 py-2 text-sm font-semibold text-gray-800 rounded-full transition-colors duration-200">Plots</button>
-                <button id="tab-csv" class="tab-button px-4 py-2 text-sm font-semibold text-gray-800 rounded-full transition-colors duration-200">CSV Data</button>
-            </div>
-            <p id="sub-header" class="text-gray-500">Click to view different types of data.</p>
+        <header class="text-center mb-8 border-b pb-4">
+            <h1 class="text-3xl font-bold text-indigo-600 mb-4">GitHub Repository Analytics</h1>
+            <form id="repo-form" class="max-w-xl mx-auto space-y-4">
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                    <input type="text" id="owner" name="owner" placeholder="GitHub Owner (e.g., kubernetes)" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="text" id="repo" name="repo" placeholder="Repository Name (e.g., kubernetes)" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <input type="password" id="token" name="token" placeholder="GitHub Personal Access Token (optional)"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                
+                <button type="submit" id="run-button" 
+                    class="w-full px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-colors duration-200"
+                    >
+                    <span id="button-text">Run Analysis</span>
+                </button>
+            </form>
         </header>
 
-        <!-- Plots Tab -->
-        <div id="plots-tab" class="tab-content active">
-            <div class="text-center mb-6">
-                <button id="run-button" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200">
-                    Run Analytics
-                </button>
+        <div id="results-container">
+            <header class="text-center mb-8 pt-4">
+                <h1 id="repo-name" class="text-4xl font-bold text-gray-800 mb-2">Analysis Results</h1>
+                <div class="inline-flex rounded-full bg-gray-200 p-1 mb-4">
+                    <button id="tab-plots" class="tab-button active px-4 py-2 text-sm font-semibold text-gray-800 rounded-full transition-colors duration-200">Plots & Overview</button>
+                    <button id="tab-csv" class="tab-button px-4 py-2 text-sm font-semibold text-gray-800 rounded-full transition-colors duration-200">Data Tables</button>
+                    </div>
+            </header>
+
+            <div id="plots-tab" class="tab-content active">
+                <div id="repo-details-card" class="bg-gray-50 rounded-xl p-6 shadow-md mb-8 transition-opacity duration-300">
+                    <h3 class="text-xl font-bold text-indigo-700 border-b border-indigo-200 pb-2 mb-4">Repository Overview</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-base">
+                        <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">⭐ Stars:</span> <span id="info-stars" class="font-bold text-gray-900">--</span></div>
+                        <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">🍴 Forks:</span> <span id="info-forks" class="font-bold text-gray-900">--</span></div>
+                        <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">👥 Contributors:</span> <span id="info-contributors" class="font-bold text-gray-900">--</span></div>
+                        <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">🚨 Open Issues/PRs:</span> <span id="info-open-issues" class="font-bold text-gray-900">--</span></div>
+                        <div class="p-2 bg-white rounded-lg col-span-2"><span class="font-semibold text-gray-700">🗓️ Created:</span> <span id="info-created" class="font-medium text-gray-600">--</span></div>
+                        <div class="p-2 bg-white rounded-lg col-span-2"><span class="font-semibold text-gray-700">🔄 Last Updated:</span> <span id="info-updated" class="font-medium text-gray-600">--</span></div>
+                    </div>
+                </div>
+                <main class="plots-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6" id="plot-grid-container">
+                    <p class="col-span-full text-center text-gray-500">Run analysis to generate plots.</p>
+                </main>
+            </div>
+
+            <div id="csv-tab" class="tab-content">
+                <p class="text-gray-600 mb-4">Click "View" to see a preview of the data or "Download" to save the CSV file.</p>
+                <div id="file-list" class="space-y-4 mb-8">
+                    <p class="text-center text-gray-500">Run analysis to generate data files.</p>
+                </div>
             </div>
             
-            <!-- REPO DETAILS CARD (NEWLY ADDED) -->
-            <div id="repo-details-card" class="bg-gray-50 rounded-xl p-6 shadow-md mb-8 transition-opacity duration-300">
-                <h3 class="text-xl font-bold text-indigo-700 border-b border-indigo-200 pb-2 mb-4">Repository Overview</h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-base">
-                    <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">⭐ Stars:</span> <span id="info-stars" class="font-bold text-gray-900">--</span></div>
-                    <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">🍴 Forks:</span> <span id="info-forks" class="font-bold text-gray-900">--</span></div>
-                    <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">👥 Contributors:</span> <span id="info-contributors" class="font-bold text-gray-900">--</span></div>
-                    <div class="p-2 bg-white rounded-lg"><span class="font-semibold text-gray-700">🚨 Open Issues/PRs:</span> <span id="info-open-issues" class="font-bold text-gray-900">--</span></div>
-                    <div class="p-2 bg-white rounded-lg col-span-2"><span class="font-semibold text-gray-700">🗓️ Created:</span> <span id="info-created" class="font-medium text-gray-600">--</span></div>
-                    <div class="p-2 bg-white rounded-lg col-span-2"><span class="font-semibold text-gray-700">🔄 Last Updated:</span> <span id="info-updated" class="font-medium text-gray-600">--</span></div>
-                </div>
             </div>
-            <!-- END REPO DETAILS CARD -->
-
-            <main class="plots-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                <!-- Plot placeholders (images will be loaded/refreshed by JS) -->
-                <!-- Root-relative path /plots/ is used for consistency with server setup -->
-                <div class="plot-card bg-gray-50 rounded-xl p-4 shadow-md">
-                    <h2 class="text-lg font-semibold mb-2 text-center">Commit Activity by Date</h2>
-                    <img id="plot-commit_activity" class="plot-img w-full h-auto rounded-lg" src="/plots/commit_activity.png" alt="Commit Activity Plot">
-                </div>
-                <div class="plot-card bg-gray-50 rounded-xl p-4 shadow-md">
-                    <h2 class="text-lg font-semibold mb-2 text-center">Commits by Author</h2>
-                    <img id="plot-author_activity" class="plot-img w-full h-auto rounded-lg" src="/plots/author_activity.png" alt="Author Activity Plot">
-                </div>
-                <div class="plot-card bg-gray-50 rounded-xl p-4 shadow-md">
-                    <h2 class="text-lg font-semibold mb-2 text-center">PRs per Day</h2>
-                    <img id="plot-prs_per_day" class="plot-img w-full h-auto rounded-lg" src="/plots/prs_per_day.png" alt="PRs Per Day Plot">
-                </div>
-                <div class="plot-card bg-gray-50 rounded-xl p-4 shadow-md">
-                    <h2 class="text-lg font-semibold mb-2 text-center">Open vs. Closed Issues</h2>
-                    <img id="plot-issues_count" class="plot-img w-full h-auto rounded-lg" src="/plots/issues_count.png" alt="Open vs Closed Issues Plot">
-                </div>
-                
-                <div class="plot-card bg-gray-50 rounded-xl p-4 shadow-md">
-                    <h2 class="text-lg font-semibold mb-2 text-center">PR Timeline</h2>
-                    <img id="plot-pr_timeline" class="plot-img w-full h-auto rounded-lg" src="/plots/pr_timeline.png" alt="PR Timeline Plot">
-                </div>
-                <div class="plot-card bg-gray-50 rounded-xl p-4 shadow-md">
-                    <h2 class="text-lg font-semibold mb-2 text-center">Issues Fixed by User</h2>
-                    <img id="plot-issues_fixed_by" class="plot-img w-full h-auto rounded-lg" src="/plots/issues_fixed_by.png" alt="Issues Fixed By User Plot">
-                </div>
-                
-            </main>
-        </div>
-
-        <!-- CSV Data Tab -->
-        <div id="csv-tab" class="tab-content">
-            <div id="file-list" class="space-y-4 mb-8">
-                <!-- File list will be populated here by JavaScript -->
-            </div>
-        </div>
     </div>
     
-    <!-- Custom Modal for General Messages (replaces alert/confirm) -->
     <div id="modal" class="modal hidden">
       <div class="modal-content">
         <p id="modal-message" class="text-lg text-gray-700"></p>
@@ -182,7 +103,6 @@
       </div>
     </div>
 
-    <!-- CSV Viewer Modal (Large Pop-up for Data Table) -->
     <div id="csv-viewer-modal" class="modal hidden">
         <div class="modal-content max-w-5xl w-11/12 p-6">
             <div class="flex justify-between items-center mb-4">
@@ -192,7 +112,6 @@
             <div id="csv-modal-message" class="text-red-500 bg-red-50 p-3 rounded-lg hidden mb-4"></div>
             <div class="csv-table-container max-h-[70vh] w-full mt-0">
                 <table id="csv-modal-table" class="min-w-full">
-                    <!-- Content will be injected here -->
                     <thead><tr><th class="text-center text-gray-500">Loading...</th></tr></thead>
                 </table>
             </div>
@@ -201,110 +120,82 @@
 
     <script>
         // --- Element Selection ---
-        const tabPlotsBtn = document.getElementById('tab-plots');
-        const tabCsvBtn = document.getElementById('tab-csv');
-
+        const form = document.getElementById('repo-form');
         const runButton = document.getElementById('run-button');
+        const buttonText = document.getElementById('button-text');
+        const resultsContainer = document.getElementById('results-container');
         const repoNameHeader = document.getElementById('repo-name');
         
-        const fileListContainer = document.getElementById('file-list');
+        const tabPlotsBtn = document.getElementById('tab-plots');
+        const tabCsvBtn = document.getElementById('tab-csv');
+        // const tabLogBtn = document.getElementById('tab-log'); // REMOVED
         
-        // General Alert Modal elements
+        const plotGridContainer = document.getElementById('plot-grid-container');
+        const fileListContainer = document.getElementById('file-list');
+        // const stdoutOutput = document.getElementById('stdout-output'); // REMOVED
+        // const stderrOutput = document.getElementById('stderr-output'); // REMOVED
+
+        // Modal elements
         const modal = document.getElementById('modal');
         const modalMessage = document.getElementById('modal-message');
         const modalOkBtn = document.getElementById('modal-ok-btn');
-        
-        // CSV Viewer Modal elements
+
         const csvViewerModal = document.getElementById('csv-viewer-modal');
         const csvModalTitle = document.getElementById('csv-modal-title');
         const csvModalTable = document.getElementById('csv-modal-table');
         const csvModalCloseBtn = document.getElementById('csv-modal-close-btn');
         const csvModalError = document.getElementById('csv-modal-message');
-        
-        // --- Utility: Custom Modal (General Alert) ---
+
         const showModal = (message) => {
             modalMessage.textContent = message;
             modal.classList.remove('hidden');
         };
-
-        const hideModal = () => {
-            modal.classList.add('hidden');
-        };
-        
+        const hideModal = () => modal.classList.add('hidden');
         modalOkBtn.addEventListener('click', hideModal);
 
-        // --- Utility: CSV Viewer Modal ---
         const hideCsvModal = () => {
             csvViewerModal.classList.add('hidden');
-            csvModalError.classList.add('hidden');
+            csvModalError.classList.add('hidden'); 
         };
-
         const showCsvModal = (filename) => {
             csvModalTitle.textContent = `Preview: ${filename}`;
             csvViewerModal.classList.remove('hidden');
-            csvModalError.classList.add('hidden'); // Clear previous errors
+            csvModalError.classList.add('hidden');
         };
-
         csvModalCloseBtn.addEventListener('click', hideCsvModal);
-
-        // Allow closing CSV modal by clicking outside
         csvViewerModal.addEventListener('click', (e) => {
-            if (e.target === csvViewerModal) {
-                hideCsvModal();
-            }
+            if (e.target === csvViewerModal) hideCsvModal();
         });
 
-
-        // --- Tab Switching Logic ---
+        // --- Tabs ---
         const showTab = (tabId) => {
             const tabs = [
                 { id: 'plots-tab', button: tabPlotsBtn },
-                { id: 'csv-tab', button: tabCsvBtn }
+                { id: 'csv-tab', button: tabCsvBtn },
+                // { id: 'log-tab', button: tabLogBtn } // REMOVED
             ];
+            // Since the Logs tab is gone, we don't need to handle it in the list.
+            const allTabButtons = document.querySelectorAll('.inline-flex .tab-button');
+            const allTabContents = document.querySelectorAll('.tab-content');
 
-            tabs.forEach(tab => {
-                const element = document.getElementById(tab.id);
-                if (tab.id === tabId) {
-                    element.classList.add('active');
-                    tab.button.classList.add('active');
-                } else {
-                    element.classList.remove('active');
-                    tab.button.classList.remove('active');
-                }
-            });
-            
-            // If switching to CSV tab, make sure links are displayed
-            if (tabId === 'csv-tab') {
-                displayCsvLinks();
-            }
+            allTabButtons.forEach(btn => btn.classList.remove('active'));
+            allTabContents.forEach(content => content.classList.remove('active'));
+
+            const activeContent = document.getElementById(tabId);
+            const activeButton = tabs.find(t => t.id === tabId)?.button;
+
+            if (activeContent) activeContent.classList.add('active');
+            if (activeButton) activeButton.classList.add('active');
         };
-
-        // Tab button event listeners
         tabPlotsBtn.addEventListener('click', () => showTab('plots-tab'));
         tabCsvBtn.addEventListener('click', () => showTab('csv-tab'));
+        // tabLogBtn.addEventListener('click', () => showTab('log-tab')); // REMOVED
 
-        // --- URL Parameter Extraction ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const owner = urlParams.get('owner');
-        const repo = urlParams.get('repo');
-        const token = urlParams.get('token');
-
-        // Display the repo name in the header
-        if (owner && repo) {
-            repoNameHeader.textContent = `${owner}/${repo}`;
-        } else {
-            repoNameHeader.textContent = `GitHub Analytics`;
-            document.getElementById('sub-header').textContent = 'Please provide owner and repo parameters in the URL.';
-        }
-        
-        // --- Utility: Repo Details Display (NEW FUNCTION) ---
+        // --- Display helpers ---
         const displayRepoDetails = (info) => {
             const card = document.getElementById('repo-details-card');
-
             if (!info) {
-                // If no info, set opacity low to visually indicate lack of data
                 card.classList.add('opacity-50');
-                // Optionally reset content to default state
                 document.getElementById('info-stars').textContent = '--';
                 document.getElementById('info-forks').textContent = '--';
                 document.getElementById('info-contributors').textContent = '--';
@@ -313,169 +204,46 @@
                 document.getElementById('info-updated').textContent = '--';
                 return;
             }
-            
-            card.classList.remove('opacity-50'); // Ensure visible
-            
-            // Fallback to 'N/A' if data points are missing from the backend response
-            document.getElementById('info-stars').textContent = info.stars ? info.stars.toLocaleString() : '0';
-            document.getElementById('info-forks').textContent = info.forks ? info.forks.toLocaleString() : '0';
-            document.getElementById('info-contributors').textContent = info.contributors ? info.contributors.toLocaleString() : '0';
-            document.getElementById('info-open-issues').textContent = info.open_issues ? info.open_issues.toLocaleString() : '0';
-            
-            // Simple date formatting (assuming backend returns ISO string)
+            card.classList.remove('opacity-50');
+            document.getElementById('info-stars').textContent = info.stars ? Number(info.stars).toLocaleString() : '0';
+            document.getElementById('info-forks').textContent = info.forks ? Number(info.forks).toLocaleString() : '0';
+            document.getElementById('info-contributors').textContent = info.contributors ? Number(info.contributors).toLocaleString() : '0';
+            document.getElementById('info-open-issues').textContent = info.open_issues ? Number(info.open_issues).toLocaleString() : '0';
             document.getElementById('info-created').textContent = info.created_at ? new Date(info.created_at).toLocaleDateString() : 'N/A';
             document.getElementById('info-updated').textContent = info.updated_at ? new Date(info.updated_at).toLocaleDateString() : 'N/A';
         };
 
-        // --- Analytics Run Logic (updated to call displayRepoDetails) ---
-        async function runAnalytics() {
-            if (!owner || !repo) {
-                showModal("Owner and repository details are missing from the URL.");
+        function renderPlots(plotsArray) {
+            plotGridContainer.innerHTML = '';
+            if (!plotsArray || plotsArray.length === 0) {
+                plotGridContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No plots were generated by the script.</p>';
                 return;
             }
-
-            runButton.disabled = true;
-            runButton.textContent = 'Running...';
-            
-            try {
-                // Fetch request to the backend service to run the Python script
-                const response = await fetch('/run-analytics', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: new URLSearchParams({
-                        'owner': owner,
-                        'repo': repo,
-                        'token': token
-                    })
-                });
-                const data = await response.json();
-                
-                // Always attempt to display repo details, even if the status is 'error'
-                displayRepoDetails(data.repo_info);
-                
-                if (data.status === 'success') {
-                    console.log("✅ Analytics script ran successfully.");
-                    console.log("--- Script Output ---");
-                    console.log(data.output);
-                    console.log("---------------------");
-                    showModal("Analytics completed successfully! Plots and CSV data are ready.");
-                    refreshPlots();
-                    displayCsvLinks();
-                } else {
-                    console.error('❌ Error running analytics: ' + data.message);
-                    console.error('--- Script Errors (stderr) ---');
-                    console.error(data.error_output);
-                    console.error("---------------------");
-                    showModal('Error running analytics. Check the browser console for script errors.');
-                }
-            } catch (error) {
-                console.error('Fetch error:', error);
-                showModal('Failed to connect to the analytics server. Check your network or server status.');
-            } finally {
-                runButton.disabled = false;
-                runButton.textContent = 'Run Analytics';
-            }
-        }
-
-        // --- Plot Refresh Logic (unchanged) ---
-        function refreshPlots() {
-            console.log("Attempting to refresh plots...");
             const timestamp = new Date().getTime();
-            const plotImages = document.querySelectorAll('#plots-tab .plot-img');
-            
-            plotImages.forEach(img => {
-                const filename = img.id.replace('plot-', '') + '.png';
-                // Using the root-relative path for plots
-                const newSrc = `/plots/${filename}?v=${timestamp}`;
-                
-                // Add an error handler: crucial for debugging 404s
+            plotsArray.forEach(filename => {
+                const basename = filename.replace(/\.[^/.]+$/, "");
+                const card = document.createElement('div');
+                card.className = 'plot-card bg-gray-50 rounded-xl p-4 shadow-md';
+                const title = document.createElement('h2');
+                title.className = 'text-lg font-semibold mb-2 text-center capitalize';
+                title.textContent = basename.replace(/_/g, ' ');
+                const img = document.createElement('img');
+                img.className = 'plot-img w-full h-auto rounded-lg';
+                // Crucial: Appending a timestamp forces the browser to bypass cache and load the new image
+                img.src = `/plots/${encodeURIComponent(filename)}?v=${timestamp}`; 
+                img.alt = basename + ' plot';
                 img.onerror = () => {
-                    img.src = `https://placehold.co/400x200/cccccc/333333?text=Plot+Missing`;
-                    // Updated error message path
-                    img.alt = `Plot image ${filename} failed to load. Check that the file exists at /plots/${filename} on the server.`;
-                    console.error(`❌ Plot image failed to load: /plots/${filename}`);
+                    // Use a simple placeholder if the plot is missing or fails to load
+                    img.src = `https://placehold.co/400x200/ef4444/ffffff?text=Plot+Missing`;
+                    img.alt = `Plot image ${filename} failed to load.`;
+                    console.error(`Plot image failed to load: /plots/${filename}`);
                 };
-
-                img.src = newSrc;
-                console.log(`Loading new image: ${newSrc}`);
+                card.appendChild(title);
+                card.appendChild(img);
+                plotGridContainer.appendChild(card);
             });
         }
-        
-        // --- CSV Viewing/Download Logic ---
-        const csvFiles = [
-            'contributors.csv',
-            'pull_requests.csv',
-            'issues.csv',
-            'review_events.csv',
-            'review_comments.csv',
-            'issue_comments.csv',
-            'all_comments.csv'
-        ];
 
-        // Renders the list of CSV files in the 'CSV Data' tab
-        const displayCsvLinks = () => {
-            fileListContainer.innerHTML = ''; // Clear previous links
-            csvFiles.forEach(filename => {
-                const fileItem = createFileItem(filename);
-                fileListContainer.appendChild(fileItem);
-            });
-            // Ensure CSV viewer modal is hidden when switching back to tab
-            hideCsvModal();
-        }
-        
-        // Converts CSV text into an HTML table and displays it in the modal
-        const displayCsvContent = (csvText, filename) => {
-            // Clear previous table content
-            csvModalTable.innerHTML = ''; 
-            csvModalError.classList.add('hidden'); // Hide error message
-
-            // Split rows, filtering out empty lines
-            const rows = csvText.split('\n').filter(row => row.trim() !== '');
-            
-            // Check for empty content
-            if (rows.length <= 1) {
-                csvModalError.textContent = `The file "${filename}" contains no data (or only a header).`;
-                csvModalError.classList.remove('hidden');
-                csvModalTable.innerHTML = `<thead><tr><th class="text-center text-gray-500">No data available.</th></tr></thead>`;
-                showCsvModal(filename);
-                return;
-            }
-
-            // Simple CSV parser
-            const headers = rows[0].split(',').map(h => h.trim());
-            const headerRow = document.createElement('thead');
-            const headerTr = document.createElement('tr');
-            
-            headers.forEach(headerText => {
-                const th = document.createElement('th');
-                th.textContent = headerText;
-                headerTr.appendChild(th);
-            });
-            headerRow.appendChild(headerTr);
-            csvModalTable.appendChild(headerRow);
-
-            const bodyRow = document.createElement('tbody');
-            for (let i = 1; i < rows.length; i++) {
-                const cells = rows[i].split(',');
-                // Ensure the row has content cells before processing
-                if (cells.some(cell => cell.trim() !== '')) { 
-                    const bodyTr = document.createElement('tr');
-                    cells.forEach(cellText => {
-                        const td = document.createElement('td');
-                        td.textContent = cellText.trim();
-                        bodyTr.appendChild(td);
-                    });
-                    bodyRow.appendChild(bodyTr);
-                }
-            }
-            csvModalTable.appendChild(bodyRow);
-
-            showCsvModal(filename);
-        };
-
-        // Creates a file item UI component with View and Download buttons
         const createFileItem = (filename) => {
             const fileItem = document.createElement('div');
             fileItem.className = 'flex flex-col sm:flex-row items-center justify-between p-4 bg-gray-50 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200';
@@ -491,32 +259,28 @@
             viewButton.className = 'px-4 py-2 bg-green-600 text-white font-semibold rounded-full shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition-colors duration-200 text-sm';
             viewButton.textContent = 'View';
 
-            const downloadButton = document.createElement('button');
+            const downloadButton = document.createElement('a');
             downloadButton.className = 'px-4 py-2 bg-blue-600 text-white font-semibold rounded-full shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 text-sm';
             downloadButton.textContent = 'Download';
+            downloadButton.href = `/csv/${encodeURIComponent(filename)}`;
+            downloadButton.download = filename;
 
-
-            // Event listener for viewing the file (Fetch)
             viewButton.addEventListener('click', async () => {
                 viewButton.textContent = 'Loading...';
                 viewButton.disabled = true;
-                // CSV file path is set to /csv/
-                const fileUrl = `/csv/${filename}`;
-                console.log(`Attempting to view CSV from URL: ${fileUrl}`);
-
+                const fileUrl = `/csv/${encodeURIComponent(filename)}`;
                 try {
+                    // Fetch the CSV file contents as text
                     const response = await fetch(fileUrl);
-                    if (!response.ok) {
-                        // Log the actual status code for debugging
-                        console.error(`❌ File fetch failed for ${filename}. Status: ${response.status}`);
-                        throw new Error(`HTTP error! Status ${response.status}.`);
-                    }
+                    if (!response.ok) throw new Error(`HTTP error! Status ${response.status}.`);
+                    
+                    // Note: We need to use response.text() not response.json()
                     const csvText = await response.text();
+                    
                     displayCsvContent(csvText, filename);
                 } catch (error) {
-                    // Show error in the CSV modal area
                     csvModalTitle.textContent = `Error Loading: ${filename}`;
-                    csvModalError.textContent = `Error: ${error.message}. Please ensure the file exists in the /csv/ directory on your server.`;
+                    csvModalError.textContent = `Error: ${error.message}. Please ensure the file exists and is readable.`;
                     csvModalError.classList.remove('hidden');
                     csvModalTable.innerHTML = `<thead><tr><th class="text-center text-red-500">Failed to load data.</th></tr></thead>`;
                     showCsvModal(filename);
@@ -524,21 +288,6 @@
                     viewButton.textContent = 'View';
                     viewButton.disabled = false;
                 }
-            });
-
-            // Event listener for downloading the file (Direct Link)
-            downloadButton.addEventListener('click', () => {
-                // CSV file path is set to /csv/
-                const downloadUrl = `/csv/${filename}`;
-                console.log(`Attempting to download CSV from URL: ${downloadUrl}`);
-                
-                // This method relies on the server correctly serving the file.
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = filename; 
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
             });
 
             buttonContainer.appendChild(viewButton);
@@ -549,24 +298,132 @@
             return fileItem;
         };
 
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Set initial state for details card
-            displayRepoDetails(null); 
+        const displayCsvLinks = (csvsArray) => {
+            fileListContainer.innerHTML = '';
+            if (!csvsArray || csvsArray.length === 0) {
+                fileListContainer.innerHTML = '<p class="text-center text-gray-500">No CSV files were generated by the script.</p>';
+                return;
+            }
+            csvsArray.forEach(filename => {
+                const fileItem = createFileItem(filename);
+                fileListContainer.appendChild(fileItem);
+            });
+            hideCsvModal();
+        };
+
+        const displayCsvContent = (csvText, filename) => {
+            csvModalTable.innerHTML = '';
+            csvModalError.classList.add('hidden');
+            // Split rows, filtering out empty lines (which can happen at the end)
+            const rows = csvText.split('\n').filter(row => row.trim() !== '');
             
-            // Initial setup: If URL parameters are present, run analytics immediately
-            if (owner && repo) {
-                runAnalytics();
-            } else {
-                // If parameters are missing, initialize the display
-                refreshPlots(); 
-                displayCsvLinks();
+            if (rows.length < 2) { // Need at least header + one data row
+                csvModalError.textContent = `The file "${filename}" contains only headers or no data.`;
+                csvModalError.classList.remove('hidden');
+                csvModalTable.innerHTML = `<thead><tr><th class="text-center text-gray-500">No data available beyond the header.</th></tr></thead>`;
+                showCsvModal(filename);
+                return;
+            }
+            
+            // CSV parsing logic
+            const headers = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            const headerRow = document.createElement('thead');
+            const headerTr = document.createElement('tr');
+            headers.forEach(headerText => {
+                const th = document.createElement('th');
+                th.textContent = headerText;
+                headerTr.appendChild(th);
+            });
+            headerRow.appendChild(headerTr);
+            csvModalTable.appendChild(headerRow);
+
+            const bodyRow = document.createElement('tbody');
+            // Start from the second row (index 1) for data
+            for (let i = 1; i < rows.length; i++) {
+                const cells = rows[i].split(',');
+                if (cells.some(cell => cell.trim() !== '')) {
+                    const bodyTr = document.createElement('tr');
+                    // Ensure number of cells matches headers
+                    for (let j = 0; j < headers.length; j++) {
+                        const td = document.createElement('td');
+                        const cellText = cells[j] || ''; // Handle missing cells
+                        td.textContent = cellText.trim().replace(/"/g, '');
+                        bodyTr.appendChild(td);
+                    }
+                    bodyRow.appendChild(bodyTr);
+                }
+            }
+            csvModalTable.appendChild(bodyRow);
+            showCsvModal(filename);
+        };
+
+        // --- Main handler ---
+        form.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const owner = form.owner.value.trim();
+            const repo = form.repo.value.trim();
+            const token = form.token.value.trim();
+
+            if (!owner || !repo) { showModal("Please enter both the GitHub owner and repository name."); return; }
+
+            runButton.disabled = true;
+            buttonText.textContent = 'Running Analytics...';
+            resultsContainer.style.display = 'none';
+            repoNameHeader.textContent = `Analysis Results for ${owner}/${repo}`;
+            
+            // Prepare JSON payload (CRITICAL FIX)
+            const payload = { owner, repo };
+            if (token) payload.token = token;
+
+            try {
+                const response = await fetch("/run-analytics", { 
+                    method: "POST", 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
+
+                // resultsContainer.style.display = 'block'; // Moved to inside success/error block for better control
+
+                if (data.status === "success") {
+                    showModal("Analysis completed successfully! Check the tabs for results.");
+                    displayRepoDetails(data.repo_info || {});
+                    renderPlots(data.plots || []);
+                    displayCsvLinks(data.csvs || []);
+                    resultsContainer.style.display = 'block';
+                } else {
+                    console.error('Error running analytics: ' + (data.message || 'Unknown error'));
+                    // Since the Logs tab is removed, the error message is now displayed via the modal.
+                    const errorMessage = `Analysis failed for ${owner}/${repo}. ${data.message || 'An unknown script error occurred.'}`;
+                    showModal(errorMessage);
+                    displayRepoDetails(null);
+                    renderPlots(null);
+                    displayCsvLinks(null);
+                    // Still show the results container, but it will only show the default "Run analysis..." messages
+                    resultsContainer.style.display = 'block';
+                }
+            } catch(err) {
+                console.error("Fetch Error:", err);
+                showModal("An unexpected network or server error occurred. Please check the browser console for details.");
+                displayRepoDetails(null);
+                renderPlots(null);
+                displayCsvLinks(null);
+                resultsContainer.style.display = 'block';
+            } finally {
+                runButton.disabled = false;
+                buttonText.textContent = 'Run Analysis';
+                // Always default to plots tab after a run
+                showTab('plots-tab'); 
             }
         });
 
-        // Event listener for the main "Run Analytics" button
-        runButton.addEventListener('click', runAnalytics);
+        // init
+        document.addEventListener('DOMContentLoaded', () => {
+            showTab('plots-tab');
+            displayRepoDetails(null);
+            renderPlots(null); // Initialize plot area with default message
+            displayCsvLinks(null); // Initialize CSV area with default message
+        });
     </script>
-
 </body>
 </html>
