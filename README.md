@@ -1,4 +1,4 @@
-Code Review Analytics
+# Code Review Analytics
 A web-based tool for fetching, analyzing, and visualizing key metrics from any public or private GitHub repository using a Python Flask backend.
 
 🔎 About
@@ -19,7 +19,7 @@ Non-Blocking Execution: Uses robust subprocess management in Flask to prevent th
 
 📂 File Structure
 The project maintains a clear separation between the web environment and the analytics engine, which is located in a dedicated subdirectory:
-
+```
 ├── app.py                      # Flask Web Server (uses Gunicorn in production)
 ├── templates/
 │   ├── index.html              # Landing page
@@ -34,8 +34,10 @@ The project maintains a clear separation between the web environment and the ana
 │             └── plots/             # Runtime storage for PNG plots (temp files)
 ├── Dockerfile                  # Container definition for production deployment
 └── requirements.txt            # Python dependencies
+```
 
-🧠 How It Works
+
+## 🧠 How It Works
 The application operates on a client-server-subprocess model:
 
  Client Request: The user clicks the "Run Analytics" button on the dashboard.html (Client).
@@ -49,13 +51,15 @@ The application operates on a client-server-subprocess model:
  Server Response: Once main.py successfully completes, Flask sends a JSON response back to the client (status: success).
 
  Data Display: The client-side JavaScript (dashboard.html) receives the success signal and triggers a refresh, fetching the newly generated files via the /plots/<filename> and /csv/<filename> routes.
+ 
 
-⚙️ Prerequisites
+## ⚙️ Prerequisites
 Docker: Required for building and running the containerized application.
 
 GitHub Personal Access Token (PAT): Required for authentication and bypassing rate limits.
 
-🐍 Python Dependencies
+
+## 🐍 Python Dependencies
 The core application requires the following libraries, which are specified in requirements.txt:
 
 Library
@@ -86,7 +90,7 @@ gunicorn
 
 Production WSGI HTTP Server used by the Docker container to serve Flask reliably.
 
-🐳 Docker Deployment & Setup
+## 🐳 Docker Deployment & Setup
 This is the recommended way to run the application, especially for deployment on AWS.
 
  Clone the repository:
@@ -107,7 +111,7 @@ Push to ECR: Tag and push your github-analytics image to your private Amazon ECR
 
 Deploy: Use the ECR image with services like AWS Fargate or AWS App Runner. These services will automatically use the gunicorn command defined in the Dockerfile.
 
-🔑 Configuration
+## 🔑 Configuration
 The application requires runtime configuration via URL parameters and input fields:
 
 Repository Details
@@ -137,7 +141,8 @@ Input Field
 
 The user's GitHub Personal Access Token (PAT).
 
-▶️ Usage
+
+## ▶️ Usage
  Start the Application (Via Docker/Gunicorn):
     If running locally, follow the steps in the Docker Deployment section above.
 
@@ -151,7 +156,7 @@ The user's GitHub Personal Access Token (PAT).
     * Use the Plots tab to see visualizations.
     * Use the CSV Data tab to view and download raw data files.
 
-📊 Output Format (Dashboard Display)
+## 📊 Output Format (Dashboard Display)
 Once the analytics script completes successfully, the dashboard switches from the "Running..." status to displaying the results, organized into two main, clickable tabs:
 
 1. Plots Tab (Visualizations)
