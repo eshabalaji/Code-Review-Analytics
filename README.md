@@ -34,7 +34,6 @@ The project maintains a clear separation between the web environment and the ana
 ```
 ├── app.py                      # Flask Web Server (uses Gunicorn in production)
 ├── templates/
-│   ├── index.html              # Landing page
 │   └── dashboard.html          # Main application interface
 ├── .github/
 │   └── actions/
@@ -42,8 +41,6 @@ The project maintains a clear separation between the web environment and the ana
 │             ├── main.py            # Orchestrates data fetching and plotting
 │             ├── github_api.py      # API communication utilities
 │             ├── visualisation.py   # Plotting functions
-│             ├── csv/               # Runtime storage for CSV output (temp files)
-│             └── plots/             # Runtime storage for PNG plots (temp files)
 ├── Dockerfile                  # Container definition for production deployment
 └── requirements.txt            # Python dependencies
 ```
