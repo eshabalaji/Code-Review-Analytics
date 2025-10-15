@@ -1,23 +1,35 @@
-# Code Review Analytics
-A web-based tool for fetching, analyzing, and visualizing key metrics from any public or private GitHub repository using a Python Flask backend.
+# 🚀 Code Review Analytics
 
-🔎 About
-This project provides a self-hosted solution for developers and managers to gain deep insights into repository health, development velocity, and team contributions. The application separates the web interface (Flask/HTML) from the data processing engine (main.py), allowing for robust, long-running analytics tasks to be executed as a subprocess on the server.
+A **web-based tool** for fetching, analyzing, and visualizing key metrics from any public or private GitHub repository using a **Python Flask backend**.
 
-The application is containerized using Docker and is configured to run with Gunicorn, making it ready for production environments like AWS ECS, Fargate, or App Runner.
+---
 
-✨ Features
-Dynamic Analysis: Executes a Python subprocess (main.py) to run analytics on demand, ensuring data is always fresh.
+## 🔎 About
 
-Token-Based Access: Securely handles GitHub Personal Access Tokens (PATs) passed via the frontend for analyzing private repositories.
+This project provides a **self-hosted analytics solution** for developers and managers to gain deep insights into repository health, development velocity, and team contributions.  
 
-Visualization Suite: Generates and displays a suite of plots, including Commit Activity, PR Time to Merge, Reviewer-Author Heatmaps, and Issue Counts.
+The application separates the web interface (**Flask/HTML**) from the analytics engine (`main.py`), allowing robust, long-running analytics tasks to execute as subprocesses on the server.
 
-Raw Data Access: Provides direct viewing and download links for raw CSV data tables.
+It is **containerized using Docker** and configured to run with **Gunicorn**, making it production-ready for environments like **AWS ECS**, **Fargate**, or **App Runner**.
 
-Non-Blocking Execution: Uses robust subprocess management in Flask to prevent the web server from hanging during long-running data fetches.
+---
 
-📂 File Structure
+## ✨ Features
+
+- **Dynamic Analysis** – Executes `main.py` as a subprocess to run analytics on demand, ensuring fresh data.
+- **Token-Based Access** – Securely handles GitHub Personal Access Tokens (PATs) for private repositories.
+- **Visualization Suite** – Generates plots such as:
+  - Commit Activity  
+  - PR Time to Merge  
+  - Reviewer–Author Heatmaps  
+  - Issue Counts  
+- **Raw Data Access** – View or download generated CSV datasets.
+- **Non-Blocking Execution** – Uses subprocess management in Flask to avoid blocking during long operations.
+
+---
+
+## 📂 File Structure
+
 The project maintains a clear separation between the web environment and the analytics engine, which is located in a dedicated subdirectory:
 ```
 ├── app.py                      # Flask Web Server (uses Gunicorn in production)
@@ -36,159 +48,145 @@ The project maintains a clear separation between the web environment and the ana
 └── requirements.txt            # Python dependencies
 ```
 
+---
 
 ## 🧠 How It Works
-The application operates on a client-server-subprocess model:
 
- Client Request: The user clicks the "Run Analytics" button on the dashboard.html (Client).
+The application operates on a **client–server–subprocess model**:
 
- Server Execution (Gunicorn): An AJAX POST request is sent to the /run-analytics route in app.py (Flask Server, managed by Gunicorn).
+1. **Client Request:**  
+   The user clicks the **"Run Analytics"** button in `dashboard.html`.
 
- Subprocess Orchestration: app.py captures the necessary parameters (owner, repo, token) and executes main.py as a separate, time-limited Python process (subprocess.run).
+2. **Server Execution (Gunicorn):**  
+   An AJAX POST request is sent to the `/run-analytics` route in `app.py`.
 
- Data Generation: main.py fetches data, processes it using helper scripts, and writes all plots (.png) and CSVs to the runtime directories (/tmp/github_analytics/plots and /tmp/github_analytics/csv inside the container).
+3. **Subprocess Orchestration:**  
+   `app.py` captures parameters (`owner`, `repo`, `token`) and executes `main.py` as a separate, time-limited Python process.
 
- Server Response: Once main.py successfully completes, Flask sends a JSON response back to the client (status: success).
+4. **Data Generation:**  
+   `main.py` fetches data via the GitHub API, processes it, and saves results to temporary directories:  
+   `/tmp/github_analytics/plots` and `/tmp/github_analytics/csv`.
 
- Data Display: The client-side JavaScript (dashboard.html) receives the success signal and triggers a refresh, fetching the newly generated files via the /plots/<filename> and /csv/<filename> routes.
- 
+5. **Server Response:**  
+   Flask sends a JSON response (`status: success`) back to the client when execution completes.
+
+6. **Data Display:**  
+   The frontend JavaScript in `dashboard.html` updates the UI to display plots and CSV tables.
+
+---
 
 ## ⚙️ Prerequisites
-Docker: Required for building and running the containerized application.
 
-GitHub Personal Access Token (PAT): Required for authentication and bypassing rate limits.
+- **Docker** – Required for building and running the container.  
+- **GitHub Personal Access Token (PAT)** – Needed for authentication and higher API rate limits.
 
+---
 
 ## 🐍 Python Dependencies
-The core application requires the following libraries, which are specified in requirements.txt:
 
-Library
+Listed in `requirements.txt`:
 
-Purpose
+| Library | Purpose |
+|----------|----------|
+| Flask | Core web framework for backend |
+| requests | GitHub API communication |
+| pandas | Data manipulation and analysis |
+| matplotlib | Core plotting library |
+| seaborn | Statistical data visualization |
+| gunicorn | Production WSGI HTTP server |
 
-Flask
-
-Core web framework for the backend server (app.py).
-
-requests
-
-Used in github_api.py for making HTTP calls to the GitHub API.
-
-pandas
-
-Essential for data manipulation, cleaning, and analysis in main.py.
-
-matplotlib
-
-Base plotting library for creating visualizations.
-
-seaborn
-
-Visualization library built on Matplotlib for statistical plots.
-
-gunicorn
-
-Production WSGI HTTP Server used by the Docker container to serve Flask reliably.
+---
 
 ## 🐳 Docker Deployment & Setup
-This is the recommended way to run the application, especially for deployment on AWS.
 
- Clone the repository:
-    bash     git clone [your-repo-link]     cd [your-repo-name]     
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/your-username/Code-Review-Analytics.git
+cd Code-Review-Analytics
+```
 
- Build the Docker image:
-(Replace github-analytics with your preferred image name)
-    bash     docker build -t github-analytics .     
+### 2️⃣ Build the Docker Image
+```bash
+docker build -t github-analytics
+```
 
- Run the container locally:
-(The application will be accessible at http://localhost:8080)
-    bash     docker run -d -p 8080:8080 --name analytics-app github-analytics     
+### 3️⃣ Run the Container Locally
+```bash
+docker run -d -p 8080:8080 --name analytics-app github-analytics
+```
+Access the app at: http://localhost:8080 
 
-Deployment to AWS
-The built image is ready to be pushed to an AWS service:
+## ☁️ Deploy to AWS
 
-Push to ECR: Tag and push your github-analytics image to your private Amazon ECR repository.
+### 🧩 Push to ECR
+Tag and push your Docker image to your **private Amazon ECR** repository.
 
-Deploy: Use the ECR image with services like AWS Fargate or AWS App Runner. These services will automatically use the gunicorn command defined in the Dockerfile.
+### 🚀 Deploy
+Use your ECR image with services like **AWS Fargate** or **AWS App Runner**.  
+These services automatically execute the **Gunicorn** command defined in the `Dockerfile`.
+
+---
 
 ## 🔑 Configuration
-The application requires runtime configuration via URL parameters and input fields:
 
-Repository Details
-The dashboard requires the following input fields, which are passed to the backend via the client-side JavaScript:
+The dashboard collects the following runtime parameters (entered by the user):
 
-Parameter
+| **Parameter** | **Location** | **Description** |
+|----------------|--------------|-----------------|
+| **Owner** | Input Field | GitHub organization or username (e.g., `kubernetes`) |
+| **Repo** | Input Field | Repository name (e.g., `kubernetes`) |
+| **Token** | Input Field | GitHub Personal Access Token (PAT) |
 
-Location
-
-Description
-
-Owner
-
-Input Field
-
-The GitHub organization or user name (e.g., kubernetes).
-
-Repo
-
-Input Field
-
-The repository name (e.g., kubernetes).
-
-Token
-
-Input Field
-
-The user's GitHub Personal Access Token (PAT).
-
+---
 
 ## ▶️ Usage
- Start the Application (Via Docker/Gunicorn):
-    If running locally, follow the steps in the Docker Deployment section above.
 
- Generate Report:
-    * Navigate to the running application (e.g., http://localhost:8080/dashboard).
-    * Enter the Owner, Repo, and Token in the dashboard form.
-    * Click Run Analytics.
-    * Wait for the process to complete (max 120 seconds). The plots tab will activate automatically upon success.
+### 🏁 Start the Application
+Follow the **Docker setup steps** above or run locally using **Gunicorn**.
 
- View Data:
-    * Use the Plots tab to see visualizations.
-    * Use the CSV Data tab to view and download raw data files.
+### 📈 Generate Analytics
+1. Visit: [http://localhost:8080/dashboard](http://localhost:8080/dashboard)  
+2. Enter **Owner**, **Repo**, and **Token**.  
+3. Click **Run Analytics** and wait for results (max 120 seconds).
 
-## 📊 Output Format (Dashboard Display)
-Once the analytics script completes successfully, the dashboard switches from the "Running..." status to displaying the results, organized into two main, clickable tabs:
+### 📊 View Data
+- Open the **Plots** tab for visual insights.  
+- Open the **CSV Data** tab to view or download raw datasets.
 
-1. Plots Tab (Visualizations)
-This tab displays all the generated PNG image files fetched from the server's /plots/ endpoint.  
-These visualizations provide immediate insight into repository activity and health:
+---
 
-Example Plot                  
+## 📊 Dashboard Output
 
-Data Displayed                                                                
+Once analysis completes successfully, the dashboard displays results in **two main tabs**:
 
-commit_activity.png        
+### 1️⃣ Plots Tab (Visualizations)
 
-Time series of commit volume over the selected period.                        
+| **Plot** | **Description** |
+|-----------|-----------------|
+| `commit_activity.png` | Time series of commit volume over time |
+| `author_activity.png` | Breakdown of commits per contributor |
+| `time_to_merge.png` | Distribution of PR merge times |
+| `reviewer_author_heatmap.png` | Reviewer–Author interaction matrix |
 
-author_activity.png        
+---
 
-Breakdown of commits/contributions by individual authors.                      
+### 2️⃣ CSV Data Tab (Raw Data)
 
-time_to_merge.png          
+- Displays links to raw CSV files generated in `.github/actions/action/csv/`.
+- **View Button:** Opens CSV preview in a scrollable modal table.  
+- **Download Button:** Downloads the full CSV file (e.g., `prs.csv`, `issues.csv`).
 
-Distribution (histogram) of the time taken for Pull Requests to be merged.    
+---
 
-reviewer_author_heatmap.png
+## 🛠️ Tech Stack
 
-Matrix showing interactions between reviewers and authors.                    
+| **Component** | **Technology** |
+|----------------|----------------|
+| **Backend** | Flask (Python) |
+| **Frontend** | HTML, CSS, JavaScript |
+| **Data Analysis** | Pandas, Matplotlib, Seaborn |
+| **Containerization** | Docker |
+| **Server** | Gunicorn |
+| **Cloud** | AWS (ECR, ECS, Fargate, or App Runner) |
 
-2. CSV Data Tab (Raw Data)
-This tab displays links to the raw data files generated and saved to the  
-.github/actions/action/csv/ directory. Users can interact with the raw data in two ways:
-
-View Button: Opens a responsive modal pop-up that displays a preview of the CSV content  
-  as a scrollable HTML table, ideal for quick inspection.
-
-Download Button: Triggers a direct file download of the full CSV file (e.g., prs.csv, issues.csv)  
-  to the user's local machine for further analysis in external tools.
+---
