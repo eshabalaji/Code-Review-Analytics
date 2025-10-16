@@ -8,6 +8,19 @@ import traceback
 import logging
 import tempfile # <--- ADDED
 
+# Import all necessary functions
+from github_api import (
+    fetch_repo_data, fetch_commits, group_commits_by_date_and_author,
+    fetch_contributors, fetch_pull_requests_with_details, fetch_issues,
+    issues_fixed_by,
+    save_contributors_csv, save_prs_csv, save_issues_csv,
+    save_review_events_csv, save_review_comments_csv,
+    save_issue_comments_csv, save_all_comments_csv)
+
+from visualisation import (
+    plot_commit_activity, plot_author_activity, plot_pr_timeline,
+    plot_prs_per_day, plot_open_vs_closed_issues_counts, plot_issues_fixed_by)
+
 # Define consistent temp paths
 TEMP_ROOT = os.path.join(tempfile.gettempdir(), 'github_analytics')
 PLOTS_DIR = os.path.join(TEMP_ROOT, 'plots')
@@ -18,21 +31,6 @@ logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 # ensure local imports work
 sys.path.append(os.path.dirname(__file__))
-
-# Import all necessary functions
-from github_api import (
-    fetch_repo_data, fetch_commits, group_commits_by_date_and_author,
-    fetch_contributors, fetch_pull_requests_with_details, fetch_issues,
-    issues_fixed_by,
-    save_contributors_csv, save_prs_csv, save_issues_csv,
-    save_review_events_csv, save_review_comments_csv,
-    save_issue_comments_csv, save_all_comments_csv
-)
-from visualisation import (
-    plot_commit_activity, plot_author_activity, plot_pr_timeline,
-    plot_prs_per_day, plot_open_vs_closed_issues_counts, plot_issues_fixed_by
-)
-
 
 def cleanup_temp_dirs():
     """Ensure output directories exist, creating them if necessary."""
