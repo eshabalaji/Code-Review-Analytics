@@ -10,7 +10,7 @@ This project provides a **self-hosted analytics solution** for developers and ma
 
 The application separates the web interface (**Flask/HTML**) from the analytics engine (`main.py`), allowing robust, long-running analytics tasks to execute as subprocesses on the server.
 
-It is **containerized using Docker** and configured to run with **Gunicorn**, making it production-ready for environments like **AWS ECS**, **Fargate**, or **App Runner**.
+It is configured to run with **Gunicorn**, making it production-ready for environments like **AWS ECS**, **Fargate**, or **App Runner**.
 
 ---
 
@@ -73,8 +73,7 @@ The application operates on a **client–server–subprocess model**:
 ---
 
 ## ⚙️ Prerequisites
-
-- **Docker** – Required for building and running the container.  
+  
 - **GitHub Personal Access Token (PAT)** – Needed for authentication and higher API rate limits.
 
 ---
@@ -120,7 +119,7 @@ The dashboard collects the following runtime parameters (entered by the user):
 ## ▶️ Usage
 
 ### 🏁 Start the Application
-Follow the **Docker setup steps** above or run locally using **Gunicorn**.
+ run locally using **Gunicorn**.
 
 ### 📈 Generate Analytics
 1. Visit: [http://localhost:8080/dashboard](http://localhost:8080/dashboard)  
@@ -163,7 +162,6 @@ Once analysis completes successfully, the dashboard displays results in **two ma
 | **Backend** | Flask (Python) |
 | **Frontend** | HTML, CSS, JavaScript |
 | **Data Analysis** | Pandas, Matplotlib, Seaborn |
-| **Containerization** | Docker |
 | **Server** | Gunicorn |
 | **Cloud** | AWS (ECR, ECS, Fargate, or App Runner) |
 
