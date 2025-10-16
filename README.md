@@ -94,29 +94,10 @@ Listed in `requirements.txt`:
 
 ---
 
-## 🐳 Docker Deployment & Setup
-
-### 1️⃣ Clone the Repository
-```bash
-git clone https://github.com/your-username/Code-Review-Analytics.git
-cd Code-Review-Analytics
-```
-
-### 2️⃣ Build the Docker Image
-```bash
-docker build -t github-analytics
-```
-
-### 3️⃣ Run the Container Locally
-```bash
-docker run -d -p 8080:8080 --name analytics-app github-analytics
-```
-Access the app at: http://localhost:8080 
-
 ## ☁️ Deploy to AWS
 
 ### 🧩 Push to ECR
-Tag and push your Docker image to your **private Amazon ECR** repository.
+Tag and push your Docker image to your **Amazon EC2** repository.
 
 ### 🚀 Deploy
 Use your ECR image with services like **AWS Fargate** or **AWS App Runner**.  
